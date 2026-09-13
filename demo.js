@@ -54,13 +54,17 @@ console.assert(html.includes("#38e1c6"), "акцентный цвет не пр�
 console.assert((html.match(/<section>/g) || []).length === deck.slides.length, "число слайдов не совпало");
 console.assert(html.includes("10×") && html.includes("bignum"), "big-number не отрендерился");
 console.assert(html.includes('class="card"') && html.includes("<svg"), "cards/иконки не отрендерились");
-console.assert(html.includes('class="metric-v"'), "metrics не отрендерился");
+console.assert(html.includes("metric-v"), "metrics не отрендерился");
 console.assert(html.includes('class="section-title"'), "section не отрендерился");
 console.assert(html.includes('class="split"') && html.includes('class="cover"'), "image-лейауты не отрендерились");
 console.assert(html.includes('class="chart"') && html.includes("url(#barg)"), "bar-график не отрендерился");
 console.assert(html.includes("chart-donut") && html.includes('class="legend"'), "donut-график не отрендерился");
 console.assert(html.includes("<polyline"), "line-график не отрендерился");
 console.assert(html.includes('class="fragment"'), "animate/fragment не применился");
+console.assert(html.includes('class="reveal motion"'), "motion не включён по умолчанию");
+console.assert(html.includes("@keyframes deckRise") && html.includes("deckCount"), "motion CSS/JS не встроены");
+console.assert(html.includes('class="metric-v count"') && html.includes('class="bignum count"'), "счётчики цифр не размечены");
+console.assert(renderDeck({ ...deck, motion: false }).includes('class="reveal"'), "motion:false не отключает движение");
 console.assert(!html.includes("Unknown layout"), "неизвестный лейаут");
 
 // each theme must render with its own font + palette vars

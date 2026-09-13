@@ -111,7 +111,14 @@ export const PACKS = {
 body{background:
   radial-gradient(60vw 60vw at 15% 0%, color-mix(in srgb,var(--accent) 32%, transparent), transparent 60%),
   radial-gradient(50vw 50vw at 100% 100%, color-mix(in srgb,var(--accent) 22%, transparent), transparent 55%),
-  var(--bg);}`,
+  var(--bg);}
+.reveal{position:relative;z-index:1;}
+@media (prefers-reduced-motion: no-preference){
+body::before{content:"";position:fixed;inset:-20%;z-index:0;pointer-events:none;
+  background:radial-gradient(38vw 38vw at 30% 35%, color-mix(in srgb,var(--accent) 30%, transparent), transparent 60%);
+  filter:blur(40px);animation:auroraFloat 16s ease-in-out infinite alternate;}
+@keyframes auroraFloat{to{transform:translate(12vw,10vh) scale(1.18)}}
+}`,
   },
   minimal: {
     name: "Minimal",
@@ -140,6 +147,58 @@ body{background:
 .reveal .metric-v,.reveal .bignum{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--accent);}`,
   },
 };
+
+// --- motion: cascade entrance + count-up + chart draw (on by default) ------
+// Everything triggers on slide-enter via reveal's `.present` class. No JS libs.
+const stag = (sel, n, base, step) =>
+  Array.from({ length: n }, (_, i) =>
+    `.reveal.motion .present ${sel}:nth-of-type(${i + 1}){animation-delay:${(base + i * step).toFixed(2)}s}`
+  ).join("");
+
+const MOTION_CSS = `
+@media (prefers-reduced-motion: no-preference){
+@keyframes deckRise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes deckFade{from{opacity:0}to{opacity:1}}
+@keyframes deckGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes deckDraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes deckSweep{from{stroke-dasharray:0 3000}}
+.reveal.motion .present :is(h1,h2,h3,.kicker,.subtitle,.section-title,.bignum,.bigcap,blockquote,.cta,.col-h,.img-side,.cover-inner){animation:deckRise .55s cubic-bezier(.2,.7,.2,1) both;}
+.reveal.motion .present>*:nth-child(2){animation-delay:.09s}
+.reveal.motion .present>*:nth-child(3){animation-delay:.18s}
+.reveal.motion .present>*:nth-child(4){animation-delay:.27s}
+.reveal.motion .present>*:nth-child(5){animation-delay:.36s}
+.reveal.motion .present :is(li,.card,.metric){animation:deckRise .5s cubic-bezier(.2,.7,.2,1) both;}
+${stag("li", 8, 0.15, 0.07)}
+${stag(".card", 8, 0.15, 0.1)}
+${stag(".metric", 6, 0.15, 0.12)}
+.reveal.motion .present .chart rect{transform-box:fill-box;transform-origin:bottom;animation:deckGrow .7s cubic-bezier(.2,.7,.2,1) both;}
+${stag(".chart rect", 8, 0.1, 0.08)}
+.reveal.motion .present .chart text{animation:deckFade .6s .55s both;}
+.reveal.motion .present .chart polyline{stroke-dasharray:1;animation:deckDraw 1.1s ease both;}
+.reveal.motion .present .chart circle{animation:deckFade .5s .85s both;}
+.reveal.motion .present .chart .seg{animation:deckSweep .9s ease both;animation-delay:calc(var(--si,0)*.14s);}
+.reveal.motion .present .legend li{animation:deckFade .5s both;}
+}
+`;
+
+// count-up: any element with class "count" animates its number 0 -> value on enter
+const MOTION_JS = `
+function deckCount(el){
+  var m=el.textContent.trim().match(/^(\\D*)([\\d.,\\s]+)(.*)$/);
+  if(!m) return;
+  var raw=m[2].replace(/[\\s,]/g,function(c){return c===','?'.':''});
+  var target=parseFloat(raw); if(isNaN(target)) return;
+  var dec=(raw.split('.')[1]||'').length, pre=m[1], post=m[3], orig=el.textContent, t0=0;
+  function tick(now){ if(!t0)t0=now; var p=Math.min(1,(now-t0)/900), e=1-Math.pow(1-p,3);
+    el.textContent=pre+(target*e).toFixed(dec)+post; if(p<1)requestAnimationFrame(tick); else el.textContent=orig; }
+  requestAnimationFrame(tick);
+}
+if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+  var run=function(s){ if(s) s.querySelectorAll('.count').forEach(deckCount); };
+  Reveal.on('ready',function(e){run(e.currentSlide);});
+  Reveal.on('slidechanged',function(e){run(e.currentSlide);});
+}
+`;
 
 // --- inline SVG charts (fill/stroke via var(--accent), no external deps) ----
 const num = (v) => (Number(String(v).replace(/[^\d.-]/g, "")) || 0);
@@ -182,7 +241,7 @@ function svgLine(data) {
     )
     .join("");
   return `<svg class="chart" viewBox="0 0 ${W} ${H}">
-    <polyline fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${poly}"/>
+    <polyline pathLength="1" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${poly}"/>
     ${dots}</svg>`;
 }
 
@@ -194,7 +253,7 @@ function svgDonut(data) {
     .map((d, i) => {
       const len = (num(d.value) / total) * C;
       const op = Math.max(1 - i * 0.16, 0.3).toFixed(2);
-      const el = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--accent)" stroke-opacity="${op}" stroke-width="${sw}" stroke-dasharray="${len.toFixed(1)} ${(C - len).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      const el = `<circle class="seg" style="--si:${i}" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--accent)" stroke-opacity="${op}" stroke-width="${sw}" stroke-dasharray="${len.toFixed(1)} ${(C - len).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"/>`;
       off += len;
       return el;
     })
@@ -225,7 +284,7 @@ const layouts = {
     </div>`,
 
   "big-number": (s) => `
-    <div class="bignum">${esc(s.number)}</div>
+    <div class="bignum count">${esc(s.number)}</div>
     <div class="bigcap">${esc(s.caption || "")}</div>`,
 
   quote: (s) => `
@@ -256,7 +315,7 @@ const layouts = {
     ${s.title ? `<h2>${esc(s.title)}</h2>` : ""}
     <div class="metrics">${(s.items || [])
       .map(
-        (m) => `<div class="metric"><div class="metric-v">${esc(m.value)}</div>
+        (m) => `<div class="metric"><div class="metric-v count">${esc(m.value)}</div>
         <div class="metric-l">${esc(m.label || "")}</div></div>`
       )
       .join("")}</div>`,
@@ -314,7 +373,8 @@ const layouts = {
 export function renderSlide(slide) {
   const fn = layouts[slide.layout];
   if (!fn) throw new Error(`Unknown layout: ${slide.layout}`);
-  return `<section>${fn(slide)}</section>`;
+  // morph:true → reveal auto-animate (matching elements glide between adjacent morph slides)
+  return `<section${slide.morph ? " data-auto-animate" : ""}>${fn(slide)}</section>`;
 }
 
 export function renderDeck(deck) {
@@ -322,6 +382,8 @@ export function renderDeck(deck) {
   const accent = deck.accent || pack.defaultAccent;
   const slides = (deck.slides || []).map(renderSlide).join("\n");
   const footer = deck.footer ? `<div class="footer">${esc(deck.footer)}</div>` : "";
+  const motion = deck.motion === false ? "" : " motion";
+  const transition = deck.transition || "slide";
   return `<!doctype html>
 <html lang="${esc(deck.language || "ru")}">
 <head>
@@ -330,15 +392,18 @@ export function renderDeck(deck) {
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="${pack.fontHref}" rel="stylesheet">
-<style>${pack.vars(accent)}${BASE}${pack.extra || ""}</style>
+<style>${pack.vars(accent)}${BASE}${pack.extra || ""}${MOTION_CSS}</style>
 </head>
 <body>
-<div class="reveal"><div class="slides">
+<div class="reveal${motion}"><div class="slides">
 ${slides}
 </div></div>
 ${footer}
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"></script>
-<script>Reveal.initialize({hash:true,transition:'slide',controlsTutorial:false});</script>
+<script>
+Reveal.initialize({hash:true,transition:'${esc(transition)}',backgroundTransition:'fade',autoAnimateDuration:.8,controlsTutorial:false});
+${MOTION_JS}
+</script>
 </body>
 </html>`;
 }

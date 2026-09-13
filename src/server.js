@@ -36,6 +36,8 @@ const deckSchema = z.object({
   accent: z.string().optional(),
   language: z.string().default("ru"),
   footer: z.string().optional(),
+  transition: z.string().optional(),
+  motion: z.boolean().optional(),
   slides: z.array(slideSchema).min(1),
 });
 
@@ -70,8 +72,13 @@ server.tool(
     "• image-cover — title, subtitle, kicker, image(URL) — обложка на весь экран\n" +
     "• chart — title, chartType('bar'|'donut'|'line'), data[]{label,value} — график\n" +
     "icon ∈ {rocket,chart,users,check,star,bolt,shield,target,clock,globe,cog,heart,lock,trend,money,layers,cloud,code,mail,spark,arrow,grid,database,eye,flag}.\n" +
-    "template (тема): 'aurora' (тёмная премиум), 'minimal' (светлая корпоративная), 'editorial' (журнальная серифная). " +
-    "Флаг слайда animate:true — буллеты/карточки появляются пошагово.",
+    "template (тема): 'aurora' (тёмная премиум), 'minimal' (светлая корпоративная), 'editorial' (журнальная серифная).\n" +
+    "АНИМАЦИЯ включена по умолчанию: каскадный вход контента, цифры отсчитываются от 0, графики рисуются. " +
+    "Ничего включать не надо. motion:false — отключить всё движение.\n" +
+    "Для ВАУ-эффекта: делай деки насыщенными — 8–14 слайдов, много конкретных ЦИФР (используй metrics и big-number: '10×', '+247%', '2.4 млн'), " +
+    "минимум сплошного текста, чередуй лейауты, добавляй chart и cards с иконками, обложку image-cover. " +
+    "Флаг слайда animate:true — буллеты/карточки по клику (для докладов). " +
+    "Флаг слайда morph:true на ДВУХ соседних слайдах — общий элемент плавно перетекает между ними (кинематографичный переход).",
   { deck: deckSchema },
   async ({ deck }) => {
     await fs.mkdir(DECKS, { recursive: true });

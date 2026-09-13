@@ -42,7 +42,7 @@ claude mcp add deck-mcp -- npx -y deck-mcp
 | `deploy` | Best-effort публикация на Vercel (нужен `vercel login`) |
 
 ## Лейауты слайдов
-`title` · `section` · `bullets` · `two-column` · `cards` (сетка фич с иконками) · `metrics` (ряд KPI) · `big-number` · `image-split` · `image-cover` · `quote` · `closing`
+`title` · `section` · `bullets` · `two-column` · `cards` (сетка фич с иконками) · `metrics` (ряд KPI) · `chart` (bar/donut/line) · `big-number` · `image-split` · `image-cover` · `quote` · `closing`
 
 Иконки для `cards`: `rocket, chart, users, check, star, bolt, shield, target, clock, globe, cog, heart, lock, trend, money, layers, cloud, code, mail, spark, arrow, grid, database, eye, flag`.
 

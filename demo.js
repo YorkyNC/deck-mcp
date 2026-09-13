@@ -27,6 +27,15 @@ const deck = {
       { value: "5+", label: "источников в одном экране" },
       { value: "2 нед", label: "до первого пилота" },
     ] },
+    { layout: "chart", title: "Рост выручки, млн ₸", chartType: "bar", data: [
+      { label: "Q1", value: 12 }, { label: "Q2", value: 19 }, { label: "Q3", value: 27 }, { label: "Q4", value: 41 },
+    ] },
+    { layout: "chart", title: "Структура клиентов", chartType: "donut", data: [
+      { label: "Госсектор", value: 45 }, { label: "Крупный бизнес", value: 35 }, { label: "SMB", value: 20 },
+    ] },
+    { layout: "chart", title: "Активные пользователи", chartType: "line", data: [
+      { label: "Янв", value: 200 }, { label: "Мар", value: 480 }, { label: "Июн", value: 910 }, { label: "Сен", value: 1600 },
+    ] },
     { layout: "two-column", title: "Было / Стало", leftTitle: "Раньше", left: ["Excel и почта", "Неделя на отчёт", "Догадки"], rightTitle: "С SKAI", right: ["Единый экран", "Ответ за секунды", "Рекомендации ИИ"] },
     { layout: "image-split", kicker: "Продукт", title: "Один экран для совета директоров", text: "Ключевые метрики и next-best-action на первом же слайде.", image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200", imageSide: "right" },
     { layout: "big-number", number: "10×", caption: "быстрее принятие решений на данных" },
@@ -48,6 +57,9 @@ console.assert(html.includes('class="card"') && html.includes("<svg"), "cards/и
 console.assert(html.includes('class="metric-v"'), "metrics не отрендерился");
 console.assert(html.includes('class="section-title"'), "section не отрендерился");
 console.assert(html.includes('class="split"') && html.includes('class="cover"'), "image-лейауты не отрендерились");
+console.assert(html.includes('class="chart"') && html.includes("url(#barg)"), "bar-график не отрендерился");
+console.assert(html.includes("chart-donut") && html.includes('class="legend"'), "donut-график не отрендерился");
+console.assert(html.includes("<polyline"), "line-график не отрендерился");
 console.assert(!html.includes("Unknown layout"), "неизвестный лейаут");
 
 const dir = path.join(ROOT, "decks", "demo");

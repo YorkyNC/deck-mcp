@@ -94,9 +94,80 @@ body{background:
 .reveal .img-side{background-size:cover;background-position:center;background-color:color-mix(in srgb,var(--accent) 30%,var(--bg));border-radius:1em;min-height:64vh;}
 .reveal .cover{display:flex;align-items:flex-end;min-height:78vh;padding:2em;border-radius:1em;background-size:cover;background-position:center;background-color:color-mix(in srgb,var(--accent) 30%,var(--bg));}
 .reveal .cover-inner{max-width:22ch;}
+/* charts */
+.reveal .chart{width:100%;max-height:56vh;margin-top:.4em;}
+.reveal .chart .c-val{fill:var(--fg);font-weight:700;font-size:20px;font-family:'Manrope',sans-serif;}
+.reveal .chart .c-lab{fill:var(--muted);font-size:16px;font-family:'Manrope',sans-serif;}
+.reveal .donut-wrap{display:flex;align-items:center;gap:2em;margin-top:.4em;}
+.reveal .chart-donut{width:auto;height:52vh;flex:0 0 auto;}
+.reveal .legend{list-style:none;margin:0;font-size:.7em;}
+.reveal .legend li{margin:.4em 0;padding:0;}
+.reveal .legend li::before{content:none;}
+.reveal .legend .dot{display:inline-block;width:.8em;height:.8em;border-radius:3px;background:var(--accent);margin-right:.5em;vertical-align:-.05em;}
 `,
   },
 };
+
+// --- inline SVG charts (fill/stroke via var(--accent), no external deps) ----
+const num = (v) => (Number(String(v).replace(/[^\d.-]/g, "")) || 0);
+
+function svgBar(data) {
+  const W = 640, H = 360, pad = 40, top = 34, bottom = 40, gap = 24;
+  const n = data.length || 1;
+  const max = Math.max(...data.map((d) => num(d.value)), 1);
+  const plotW = W - pad * 2, plotH = H - top - bottom, barW = (plotW - gap * (n - 1)) / n;
+  const bars = data
+    .map((d, i) => {
+      const h = (num(d.value) / max) * plotH;
+      const x = pad + i * (barW + gap), y = top + plotH - h, cx = x + barW / 2;
+      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="6" fill="url(#barg)"/>
+      <text class="c-val" x="${cx.toFixed(1)}" y="${(y - 10).toFixed(1)}" text-anchor="middle">${esc(d.value)}</text>
+      <text class="c-lab" x="${cx.toFixed(1)}" y="${H - 12}" text-anchor="middle">${esc(d.label || "")}</text>`;
+    })
+    .join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">
+    <defs><linearGradient id="barg" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)"/></linearGradient></defs>
+    ${bars}</svg>`;
+}
+
+function svgLine(data) {
+  const W = 640, H = 360, pad = 48, top = 34, bottom = 40;
+  const n = data.length || 1;
+  const max = Math.max(...data.map((d) => num(d.value)), 1);
+  const plotW = W - pad * 2, plotH = H - top - bottom;
+  const pts = data.map((d, i) => ({
+    x: pad + (n <= 1 ? plotW / 2 : (i / (n - 1)) * plotW),
+    y: top + plotH - (num(d.value) / max) * plotH,
+    d,
+  }));
+  const poly = pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const dots = pts
+    .map(
+      (p) => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="var(--accent)"/>
+      <text class="c-lab" x="${p.x.toFixed(1)}" y="${H - 12}" text-anchor="middle">${esc(p.d.label || "")}</text>`
+    )
+    .join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">
+    <polyline fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${poly}"/>
+    ${dots}</svg>`;
+}
+
+function svgDonut(data) {
+  const cx = 180, cy = 180, r = 120, sw = 48, C = 2 * Math.PI * r;
+  const total = data.reduce((a, d) => a + num(d.value), 0) || 1;
+  let off = 0;
+  const segs = data
+    .map((d, i) => {
+      const len = (num(d.value) / total) * C;
+      const op = Math.max(1 - i * 0.16, 0.3).toFixed(2);
+      const el = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--accent)" stroke-opacity="${op}" stroke-width="${sw}" stroke-dasharray="${len.toFixed(1)} ${(C - len).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      off += len;
+      return el;
+    })
+    .join("");
+  return `<svg class="chart chart-donut" viewBox="0 0 360 360">${segs}</svg>`;
+}
 
 // --- layout renderers -------------------------------------------------------
 const layouts = {
@@ -171,6 +242,26 @@ const layouts = {
       ${s.bullets ? `<ul>${(s.bullets || []).map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}
     </div>`;
     return `<div class="split">${s.imageSide === "left" ? img + txt : txt + img}</div>`;
+  },
+
+  // data chart: chartType "bar"|"donut"|"line", data[] = {label, value}
+  chart: (s) => {
+    const type = s.chartType || "bar";
+    const data = s.data || [];
+    const svg = type === "donut" ? svgDonut(data) : type === "line" ? svgLine(data) : svgBar(data);
+    const legend =
+      type === "donut"
+        ? `<ul class="legend">${data
+            .map(
+              (d, i) =>
+                `<li><span class="dot" style="opacity:${Math.max(1 - i * 0.16, 0.3).toFixed(2)}"></span>${esc(
+                  d.label || ""
+                )} — <b>${esc(d.value)}</b></li>`
+            )
+            .join("")}</ul>`
+        : "";
+    return `${s.title ? `<h2>${esc(s.title)}</h2>` : ""}
+      ${type === "donut" ? `<div class="donut-wrap">${svg}${legend}</div>` : svg}`;
   },
 
   // full-bleed image cover with legibility overlay

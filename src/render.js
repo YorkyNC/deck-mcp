@@ -86,6 +86,11 @@ body{background:var(--bg);}
 .reveal .cover-inner{max-width:22ch;}
 .reveal .cover-inner h1{color:#fff;}
 .reveal .cover-inner .subtitle{color:rgba(255,255,255,.82);}
+/* hero: dark animated background on any slide, any theme */
+.reveal .hero{--fg:#ffffff;--muted:rgba(255,255,255,.78);}
+.reveal .hero .hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden;background:radial-gradient(70% 60% at 50% -10%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 60%),#080a12;}
+.reveal .hero .hero-bg::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 100% at 50% 40%,transparent 40%,rgba(0,0,0,.68));}
+.reveal .hero>*:not(.hero-bg){position:relative;z-index:1;}
 /* charts */
 .reveal .chart{width:100%;max-height:56vh;margin-top:.4em;}
 .reveal .chart .c-val{fill:var(--fg);font-weight:700;font-size:20px;font-family:var(--font),sans-serif;}
@@ -122,6 +127,27 @@ body::before{content:"";position:fixed;inset:-25%;z-index:0;pointer-events:none;
     radial-gradient(30vw 30vw at 74% 68%, color-mix(in srgb,var(--accent) 24%, transparent), transparent 60%);
   filter:blur(46px);animation:auroraFloat 18s ease-in-out infinite alternate;}
 @keyframes auroraFloat{from{transform:translate(-3vw,-2vh) scale(1)}to{transform:translate(10vw,8vh) scale(1.16)}}
+}`,
+  },
+  noir: {
+    name: "Noir",
+    description: "Глубокий чёрный: холодный акцент, живое свечение, сильное затемнение — максимум премиум-драмы.",
+    defaultAccent: "#4f7cff",
+    font: "Manrope",
+    fontHref: "https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap",
+    vars: (accent) => `:root{--accent:${accent};--bg:#05060a;--fg:#f2f4fb;--muted:#8b93a7;--font:'Manrope';--on-accent:#05060a;}`,
+    extra: `
+body{background:radial-gradient(70vw 60vw at 50% -10%, color-mix(in srgb,var(--accent) 20%, transparent), transparent 60%), var(--bg);}
+.reveal{position:relative;z-index:1;}
+body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(120vw 90vh at 50% 38%, transparent 36%, rgba(0,0,0,.72) 100%);}
+@media (prefers-reduced-motion: no-preference){
+body::before{content:"";position:fixed;inset:-25%;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(32vw 32vw at 26% 30%, color-mix(in srgb,var(--accent) 30%, transparent), transparent 60%),
+    radial-gradient(28vw 28vw at 76% 70%, color-mix(in srgb,var(--accent) 18%, transparent), transparent 60%);
+  filter:blur(50px);animation:auroraFloat 20s ease-in-out infinite alternate;}
+@keyframes auroraFloat{from{transform:translate(-3vw,-2vh) scale(1)}to{transform:translate(9vw,7vh) scale(1.18)}}
 }`,
   },
   minimal: {
@@ -182,6 +208,12 @@ ${stag(".chart rect", 8, 0.1, 0.08)}
 .reveal.motion .present .chart circle{animation:deckFade .5s .85s both;}
 .reveal.motion .present .chart .seg{animation:deckSweep .9s ease both;animation-delay:calc(var(--si,0)*.14s);}
 .reveal.motion .present .legend li{animation:deckFade .5s both;}
+@keyframes heroFloat{from{transform:translate(-3%,-2%) scale(1)}to{transform:translate(8%,6%) scale(1.16)}}
+.reveal.motion .hero .hero-bg::before{content:"";position:absolute;inset:-25%;pointer-events:none;
+  background:
+    radial-gradient(40% 40% at 28% 32%, color-mix(in srgb,var(--accent) 42%, transparent), transparent 60%),
+    radial-gradient(36% 36% at 74% 70%, color-mix(in srgb,var(--accent) 26%, transparent), transparent 60%);
+  filter:blur(34px);animation:heroFloat 18s ease-in-out infinite alternate;}
 }
 `;
 
@@ -377,8 +409,9 @@ const layouts = {
 export function renderSlide(slide) {
   const fn = layouts[slide.layout];
   if (!fn) throw new Error(`Unknown layout: ${slide.layout}`);
-  // morph:true → reveal auto-animate (matching elements glide between adjacent morph slides)
-  return `<section${slide.morph ? " data-auto-animate" : ""}>${fn(slide)}</section>`;
+  // hero:true → dark animated background on this slide (any theme); morph:true → reveal auto-animate
+  const bg = slide.hero ? '<div class="hero-bg" aria-hidden="true"></div>' : "";
+  return `<section${slide.hero ? ' class="hero"' : ""}${slide.morph ? " data-auto-animate" : ""}>${bg}${fn(slide)}</section>`;
 }
 
 export function renderDeck(deck) {

@@ -14,7 +14,7 @@ const deck = {
   language: "ru",
   footer: "SKAI DATA • конфиденциально",
   slides: [
-    { layout: "title", kicker: "Питч-дек", title: "Решения, а не дашборды", subtitle: "AI-аналитика, которая говорит на языке бизнеса" },
+    { layout: "title", hero: true, kicker: "Питч-дек", title: "Решения, а не дашборды", subtitle: "AI-аналитика, которая говорит на языке бизнеса" },
     { layout: "bullets", title: "Проблема", animate: true, bullets: ["Данные разбросаны по 5+ системам", "Отчёты готовятся вручную дни", "Руководитель видит цифры, а не выводы"] },
     { layout: "section", kicker: "01", title: "Как это работает" },
     { layout: "cards", title: "Три опоры", cards: [
@@ -51,7 +51,7 @@ const html = renderDeck(deck);
 console.assert(html.includes("<!doctype html>"), "нет doctype");
 console.assert(html.includes(deck.title), "нет заголовка деки");
 console.assert(html.includes("#38e1c6"), "акцентный цвет не применился");
-console.assert((html.match(/<section>/g) || []).length === deck.slides.length, "число слайдов не совпало");
+console.assert((html.match(/<section[ >]/g) || []).length === deck.slides.length, "число слайдов не совпало");
 console.assert(html.includes("10×") && html.includes("bignum"), "big-number не отрендерился");
 console.assert(html.includes('class="card"') && html.includes("<svg"), "cards/иконки не отрендерились");
 console.assert(html.includes("metric-v"), "metrics не отрендерился");
@@ -64,6 +64,7 @@ console.assert(html.includes('class="fragment"'), "animate/fragment не при�
 console.assert(html.includes('class="reveal motion"'), "motion не включён по умолчанию");
 console.assert(html.includes("@keyframes deckRise") && html.includes("deckCount"), "motion CSS/JS не встроены");
 console.assert(html.includes("auroraFloat") && html.includes("rgba(0,0,0,.58)"), "живой фон/виньетка не встроены");
+console.assert(html.includes('class="hero"') && html.includes('class="hero-bg"') && html.includes("heroFloat"), "hero-фон не встроен");
 console.assert(html.includes('class="metric-v count"') && html.includes('class="bignum count"'), "счётчики цифр не размечены");
 console.assert(renderDeck({ ...deck, motion: false }).includes('class="reveal"'), "motion:false не отключает движение");
 console.assert(!html.includes("Unknown layout"), "неизвестный лейаут");
@@ -85,5 +86,6 @@ await fs.writeFile(file, html);
 
 console.log("OK — все проверки прошли");
 console.log("Aurora:   ", pathToFileURL(file).href);
+console.log("Noir:     ", pathToFileURL(path.join(dir, "noir", "index.html")).href);
 console.log("Minimal:  ", pathToFileURL(path.join(dir, "minimal", "index.html")).href);
 console.log("Editorial:", pathToFileURL(path.join(dir, "editorial", "index.html")).href);

@@ -72,7 +72,8 @@ server.tool(
     "• image-cover — title, subtitle, kicker, image(URL) — обложка на весь экран\n" +
     "• chart — title, chartType('bar'|'donut'|'line'), data[]{label,value} — график\n" +
     "icon ∈ {rocket,chart,users,check,star,bolt,shield,target,clock,globe,cog,heart,lock,trend,money,layers,cloud,code,mail,spark,arrow,grid,database,eye,flag}.\n" +
-    "template (тема): 'aurora' (тёмная премиум), 'minimal' (светлая корпоративная), 'editorial' (журнальная серифная).\n" +
+    "template (тема): 'aurora' (тёмная премиум), 'noir' (глубокий чёрный, драма), 'minimal' (светлая корпоративная), 'editorial' (журнальная серифная).\n" +
+    "Флаг слайда hero:true — оживлённый тёмный фон с затемнением на этом слайде (в любой теме); идеально для title/section/cover.\n" +
     "АНИМАЦИЯ включена по умолчанию: каскадный вход контента, цифры отсчитываются от 0, графики рисуются. " +
     "Ничего включать не надо. motion:false — отключить всё движение.\n" +
     "Для ВАУ-эффекта: делай деки насыщенными — 8–14 слайдов, много конкретных ЦИФР (используй metrics и big-number: '10×', '+247%', '2.4 млн'), " +

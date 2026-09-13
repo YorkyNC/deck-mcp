@@ -4,6 +4,44 @@
 const esc = (s = "") =>
   String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+// Escape a URL for safe use inside a CSS url('...') / html attribute.
+const escUrl = (s = "") => String(s).replace(/['"\\)]/g, "").replace(/\s/g, "%20");
+
+// --- inline SVG icon set (stroke = currentColor, no external deps) ----------
+const ICONS = {
+  rocket: '<path d="M5 15c-1.5 1.5-2 5-2 5s3.5-.5 5-2M9 12a13 13 0 0 1 8-9c2 0 3 1 3 3a13 13 0 0 1-9 8l-2-2zM15 8.5a1 1 0 1 0 .01 0"/>',
+  chart: '<path d="M3 3v18h18M8 15v-4M13 15V7M18 15v-8"/>',
+  users: '<path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 20v-2a4 4 0 0 0-3-3.87M16 2.13A4 4 0 0 1 16 10"/>',
+  check: '<path d="M20 6L9 17l-5-5"/>',
+  star: '<path d="M12 2l3 7 7 .5-5.5 4.5 2 7L12 17l-6.5 4 2-7L2 9.5 9 9z"/>',
+  bolt: '<path d="M13 2L3 14h8l-1 8 10-12h-8z"/>',
+  shield: '<path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/>',
+  target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/>',
+  cog: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  heart: '<path d="M12 21C6 16 3 12.5 3 8.5A4.5 4.5 0 0 1 12 6a4.5 4.5 0 0 1 9 2.5C21 12.5 18 16 12 21z"/>',
+  lock: '<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  trend: '<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>',
+  money: '<circle cx="12" cy="12" r="9"/><path d="M15 9a3 3 0 0 0-3-2c-1.7 0-3 1-3 2.3 0 3.2 6 1.5 6 4.7C15 17.3 13.7 18 12 18a3 3 0 0 1-3-2M12 5v2M12 17v2"/>',
+  layers: '<path d="M12 2l9 5-9 5-9-5zM3 12l9 5 9-5M3 17l9 5 9-5"/>',
+  cloud: '<path d="M6 18a4 4 0 0 1 0-8 5 5 0 0 1 9.5-1A4 4 0 0 1 18 18z"/>',
+  code: '<path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
+  arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  grid: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
+  database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  flag: '<path d="M4 21V4M4 4h13l-2 4 2 4H4"/>',
+};
+const icon = (name) => {
+  const p = ICONS[name];
+  return p
+    ? `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`
+    : "";
+};
+
 // --- style packs -----------------------------------------------------------
 export const PACKS = {
   aurora: {
@@ -37,6 +75,25 @@ body{background:
 .reveal .cta{display:inline-block;margin-top:1em;padding:.55em 1.3em;border-radius:999px;background:var(--accent);color:#0b0c14;font-weight:700;font-size:.7em;}
 .reveal .progress{color:var(--accent);}
 .reveal .footer{position:fixed;bottom:1.1em;left:4%;color:var(--muted);font-size:.5em;letter-spacing:.04em;}
+.reveal .ic{width:1em;height:1em;vertical-align:-.12em;}
+/* cards */
+.reveal .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(6.5em,1fr));gap:.9em;margin-top:.7em;}
+.reveal .card{padding:.9em 1em;border-radius:.7em;background:color-mix(in srgb,var(--fg) 5%,transparent);border:1px solid color-mix(in srgb,var(--fg) 12%,transparent);}
+.reveal .card-ic{color:var(--accent);font-size:1.6em;line-height:1;margin-bottom:.35em;}
+.reveal .card-t{font-weight:700;font-size:.82em;margin-bottom:.25em;}
+.reveal .card-x{color:var(--muted);font-size:.62em;line-height:1.35;}
+/* metrics row */
+.reveal .metrics{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:1.4em;margin-top:.8em;}
+.reveal .metric-v{font-size:2.6em;font-weight:800;line-height:1;background:linear-gradient(120deg,var(--fg),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.reveal .metric-l{color:var(--muted);font-size:.62em;margin-top:.4em;max-width:14ch;}
+/* section divider */
+.reveal .section-title{font-size:3.2em;}
+.reveal .section-title::after{content:"";display:block;width:2.2em;height:.14em;border-radius:2px;background:var(--accent);margin-top:.35em;}
+/* image layouts */
+.reveal .split{display:grid;grid-template-columns:1fr 1fr;gap:2em;align-items:center;min-height:64vh;}
+.reveal .img-side{background-size:cover;background-position:center;background-color:color-mix(in srgb,var(--accent) 30%,var(--bg));border-radius:1em;min-height:64vh;}
+.reveal .cover{display:flex;align-items:flex-end;min-height:78vh;padding:2em;border-radius:1em;background-size:cover;background-position:center;background-color:color-mix(in srgb,var(--accent) 30%,var(--bg));}
+.reveal .cover-inner{max-width:22ch;}
 `,
   },
 };
@@ -75,6 +132,57 @@ const layouts = {
     <h1>${esc(s.title)}</h1>
     ${s.subtitle ? `<p class="subtitle">${esc(s.subtitle)}</p>` : ""}
     ${s.cta ? `<span class="cta">${esc(s.cta)}</span>` : ""}`,
+
+  // grid of feature cards: cards[] = {icon, title, text}
+  cards: (s) => `
+    ${s.title ? `<h2>${esc(s.title)}</h2>` : ""}
+    <div class="cards">${(s.cards || [])
+      .map(
+        (c) => `<div class="card">
+        ${c.icon ? `<div class="card-ic">${icon(c.icon)}</div>` : ""}
+        ${c.title ? `<div class="card-t">${esc(c.title)}</div>` : ""}
+        ${c.text ? `<div class="card-x">${esc(c.text)}</div>` : ""}</div>`
+      )
+      .join("")}</div>`,
+
+  // KPI row: items[] = {value, label}
+  metrics: (s) => `
+    ${s.title ? `<h2>${esc(s.title)}</h2>` : ""}
+    <div class="metrics">${(s.items || [])
+      .map(
+        (m) => `<div class="metric"><div class="metric-v">${esc(m.value)}</div>
+        <div class="metric-l">${esc(m.label || "")}</div></div>`
+      )
+      .join("")}</div>`,
+
+  // section divider: kicker + big title + accent rule
+  section: (s) => `
+    ${s.kicker ? `<div class="kicker">${esc(s.kicker)}</div>` : ""}
+    <h1 class="section-title">${esc(s.title)}</h1>
+    ${s.subtitle ? `<p class="subtitle">${esc(s.subtitle)}</p>` : ""}`,
+
+  // text + image split (imageSide: "left" | "right", default right)
+  "image-split": (s) => {
+    const img = `<div class="img-side" style="background-image:url('${escUrl(s.image)}')"></div>`;
+    const txt = `<div class="txt-side">
+      ${s.kicker ? `<div class="kicker">${esc(s.kicker)}</div>` : ""}
+      <h2>${esc(s.title)}</h2>
+      ${s.text ? `<p class="subtitle">${esc(s.text)}</p>` : ""}
+      ${s.bullets ? `<ul>${(s.bullets || []).map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}
+    </div>`;
+    return `<div class="split">${s.imageSide === "left" ? img + txt : txt + img}</div>`;
+  },
+
+  // full-bleed image cover with legibility overlay
+  "image-cover": (s) => {
+    const overlay = "linear-gradient(180deg,rgba(11,12,20,.15),rgba(11,12,20,.82))";
+    return `<div class="cover" style="background-image:${overlay},url('${escUrl(s.image)}')">
+      <div class="cover-inner">
+        ${s.kicker ? `<div class="kicker">${esc(s.kicker)}</div>` : ""}
+        <h1>${esc(s.title)}</h1>
+        ${s.subtitle ? `<p class="subtitle">${esc(s.subtitle)}</p>` : ""}
+      </div></div>`;
+  },
 };
 
 export function renderSlide(slide) {

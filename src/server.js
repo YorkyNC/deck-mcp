@@ -23,7 +23,10 @@ const slugify = (s) =>
 
 const slideSchema = z
   .object({
-    layout: z.enum(["title", "bullets", "two-column", "big-number", "quote", "closing"]),
+    layout: z.enum([
+      "title", "bullets", "two-column", "big-number", "quote", "closing",
+      "cards", "metrics", "section", "image-split", "image-cover",
+    ]),
   })
   .passthrough();
 
@@ -55,8 +58,17 @@ server.tool(
 server.tool(
   "create_deck",
   "Сохранить deck-JSON (структуру + контент презентации, заполненную моделью). Возвращает deckId. " +
-    "Слайды: layout ∈ {title,bullets,two-column,big-number,quote,closing} + поля лейаута " +
-    "(title, subtitle, kicker, bullets[], leftTitle/left[], rightTitle/right[], number, caption, quote, author, cta).",
+    "Слайды: layout + поля лейаута. Не делай дек только из bullets — чередуй визуальные лейауты. Лейауты:\n" +
+    "• title/closing/section — kicker, title, subtitle (+cta у closing)\n" +
+    "• bullets — title, bullets[]\n" +
+    "• two-column — title, leftTitle/left[], rightTitle/right[]\n" +
+    "• big-number — number, caption\n" +
+    "• quote — quote, author\n" +
+    "• cards — title, cards[]{icon,title,text} — сетка фич\n" +
+    "• metrics — title, items[]{value,label} — ряд KPI\n" +
+    "• image-split — title, text/bullets[], image(URL), imageSide('left'|'right')\n" +
+    "• image-cover — title, subtitle, kicker, image(URL) — обложка на весь экран\n" +
+    "icon ∈ {rocket,chart,users,check,star,bolt,shield,target,clock,globe,cog,heart,lock,trend,money,layers,cloud,code,mail,spark,arrow,grid,database,eye,flag}.",
   { deck: deckSchema },
   async ({ deck }) => {
     await fs.mkdir(DECKS, { recursive: true });

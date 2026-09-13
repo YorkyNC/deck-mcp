@@ -63,6 +63,7 @@ console.assert(html.includes("<polyline"), "line-график не отренд�
 console.assert(html.includes('class="fragment"'), "animate/fragment не применился");
 console.assert(html.includes('class="reveal motion"'), "motion не включён по умолчанию");
 console.assert(html.includes("@keyframes deckRise") && html.includes("deckCount"), "motion CSS/JS не встроены");
+console.assert(html.includes("auroraFloat") && html.includes("rgba(0,0,0,.58)"), "живой фон/виньетка не встроены");
 console.assert(html.includes('class="metric-v count"') && html.includes('class="bignum count"'), "счётчики цифр не размечены");
 console.assert(renderDeck({ ...deck, motion: false }).includes('class="reveal"'), "motion:false не отключает движение");
 console.assert(!html.includes("Unknown layout"), "неизвестный лейаут");

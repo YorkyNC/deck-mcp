@@ -113,11 +113,15 @@ body{background:
   radial-gradient(50vw 50vw at 100% 100%, color-mix(in srgb,var(--accent) 22%, transparent), transparent 55%),
   var(--bg);}
 .reveal{position:relative;z-index:1;}
+body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(120vw 90vh at 50% 40%, transparent 42%, rgba(0,0,0,.58) 100%);}
 @media (prefers-reduced-motion: no-preference){
-body::before{content:"";position:fixed;inset:-20%;z-index:0;pointer-events:none;
-  background:radial-gradient(38vw 38vw at 30% 35%, color-mix(in srgb,var(--accent) 30%, transparent), transparent 60%);
-  filter:blur(40px);animation:auroraFloat 16s ease-in-out infinite alternate;}
-@keyframes auroraFloat{to{transform:translate(12vw,10vh) scale(1.18)}}
+body::before{content:"";position:fixed;inset:-25%;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(34vw 34vw at 28% 32%, color-mix(in srgb,var(--accent) 36%, transparent), transparent 60%),
+    radial-gradient(30vw 30vw at 74% 68%, color-mix(in srgb,var(--accent) 24%, transparent), transparent 60%);
+  filter:blur(46px);animation:auroraFloat 18s ease-in-out infinite alternate;}
+@keyframes auroraFloat{from{transform:translate(-3vw,-2vh) scale(1)}to{transform:translate(10vw,8vh) scale(1.16)}}
 }`,
   },
   minimal: {

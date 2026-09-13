@@ -3,7 +3,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { renderDeck } from "./src/render.js";
+import { renderDeck, PACKS } from "./src/render.js";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,7 +15,7 @@ const deck = {
   footer: "SKAI DATA • конфиденциально",
   slides: [
     { layout: "title", kicker: "Питч-дек", title: "Решения, а не дашборды", subtitle: "AI-аналитика, которая говорит на языке бизнеса" },
-    { layout: "bullets", title: "Проблема", bullets: ["Данные разбросаны по 5+ системам", "Отчёты готовятся вручную дни", "Руководитель видит цифры, а не выводы"] },
+    { layout: "bullets", title: "Проблема", animate: true, bullets: ["Данные разбросаны по 5+ системам", "Отчёты готовятся вручную дни", "Руководитель видит цифры, а не выводы"] },
     { layout: "section", kicker: "01", title: "Как это работает" },
     { layout: "cards", title: "Три опоры", cards: [
       { icon: "database", title: "Единый слой", text: "Все источники в одном месте" },
@@ -60,7 +60,18 @@ console.assert(html.includes('class="split"') && html.includes('class="cover"'),
 console.assert(html.includes('class="chart"') && html.includes("url(#barg)"), "bar-график не отрендерился");
 console.assert(html.includes("chart-donut") && html.includes('class="legend"'), "donut-график не отрендерился");
 console.assert(html.includes("<polyline"), "line-график не отрендерился");
+console.assert(html.includes('class="fragment"'), "animate/fragment не применился");
 console.assert(!html.includes("Unknown layout"), "неизвестный лейаут");
+
+// each theme must render with its own font + palette vars
+for (const [id, p] of Object.entries(PACKS)) {
+  const h = renderDeck({ ...deck, template: id, accent: undefined });
+  console.assert(h.includes(p.fontHref), `тема ${id}: не подключён шрифт`);
+  console.assert(h.includes(`--font:'${p.font === "Fraunces" ? "Inter" : p.font}'`), `тема ${id}: не задан --font`);
+  const themeDir = path.join(ROOT, "decks", "demo", id);
+  await fs.mkdir(themeDir, { recursive: true });
+  await fs.writeFile(path.join(themeDir, "index.html"), h);
+}
 
 const dir = path.join(ROOT, "decks", "demo");
 await fs.mkdir(dir, { recursive: true });
@@ -68,4 +79,6 @@ const file = path.join(dir, "index.html");
 await fs.writeFile(file, html);
 
 console.log("OK — все проверки прошли");
-console.log("Открыть:", pathToFileURL(file).href);
+console.log("Aurora:   ", pathToFileURL(file).href);
+console.log("Minimal:  ", pathToFileURL(path.join(dir, "minimal", "index.html")).href);
+console.log("Editorial:", pathToFileURL(path.join(dir, "editorial", "index.html")).href);

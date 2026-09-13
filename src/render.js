@@ -42,22 +42,12 @@ const icon = (name) => {
     : "";
 };
 
-// --- style packs -----------------------------------------------------------
-export const PACKS = {
-  aurora: {
-    name: "Aurora",
-    description: "Тёмный премиум-питч: крупная типографика, мягкое свечение, акцентный градиент.",
-    defaultAccent: "#7c5cff",
-    font: "Manrope",
-    css: (accent) => `
-:root{--accent:${accent};--bg:#0b0c14;--fg:#f4f5fb;--muted:#9aa0b4;}
-.reveal{font-family:'Manrope',system-ui,sans-serif;color:var(--fg);}
+// --- shared structural CSS (palette comes from per-pack :root vars) ---------
+const BASE = `
+.reveal{font-family:var(--font),system-ui,sans-serif;color:var(--fg);}
 .reveal .slides{text-align:left;}
 .reveal .slides section{padding:0 4%;}
-body{background:
-  radial-gradient(60vw 60vw at 15% 0%, color-mix(in srgb,var(--accent) 32%, transparent), transparent 60%),
-  radial-gradient(50vw 50vw at 100% 100%, color-mix(in srgb,var(--accent) 22%, transparent), transparent 55%),
-  var(--bg);}
+body{background:var(--bg);}
 .reveal h1,.reveal h2,.reveal h3{color:var(--fg);font-weight:800;letter-spacing:-.02em;text-transform:none;line-height:1.05;}
 .reveal h1{font-size:2.4em;} .reveal h2{font-size:1.7em;}
 .reveal .subtitle{color:var(--muted);font-size:1.1em;font-weight:500;margin-top:.4em;}
@@ -72,7 +62,7 @@ body{background:
 .reveal blockquote{border:0;box-shadow:none;background:none;font-size:1.5em;font-weight:600;line-height:1.3;}
 .reveal blockquote .q-mark{color:var(--accent);font-size:1.4em;line-height:0;vertical-align:-.15em;margin-right:.1em;}
 .reveal .q-author{color:var(--muted);font-size:.55em;font-weight:500;margin-top:.8em;}
-.reveal .cta{display:inline-block;margin-top:1em;padding:.55em 1.3em;border-radius:999px;background:var(--accent);color:#0b0c14;font-weight:700;font-size:.7em;}
+.reveal .cta{display:inline-block;margin-top:1em;padding:.55em 1.3em;border-radius:999px;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:.7em;}
 .reveal .progress{color:var(--accent);}
 .reveal .footer{position:fixed;bottom:1.1em;left:4%;color:var(--muted);font-size:.5em;letter-spacing:.04em;}
 .reveal .ic{width:1em;height:1em;vertical-align:-.12em;}
@@ -94,17 +84,60 @@ body{background:
 .reveal .img-side{background-size:cover;background-position:center;background-color:color-mix(in srgb,var(--accent) 30%,var(--bg));border-radius:1em;min-height:64vh;}
 .reveal .cover{display:flex;align-items:flex-end;min-height:78vh;padding:2em;border-radius:1em;background-size:cover;background-position:center;background-color:color-mix(in srgb,var(--accent) 30%,var(--bg));}
 .reveal .cover-inner{max-width:22ch;}
+.reveal .cover-inner h1{color:#fff;}
+.reveal .cover-inner .subtitle{color:rgba(255,255,255,.82);}
 /* charts */
 .reveal .chart{width:100%;max-height:56vh;margin-top:.4em;}
-.reveal .chart .c-val{fill:var(--fg);font-weight:700;font-size:20px;font-family:'Manrope',sans-serif;}
-.reveal .chart .c-lab{fill:var(--muted);font-size:16px;font-family:'Manrope',sans-serif;}
+.reveal .chart .c-val{fill:var(--fg);font-weight:700;font-size:20px;font-family:var(--font),sans-serif;}
+.reveal .chart .c-lab{fill:var(--muted);font-size:16px;font-family:var(--font),sans-serif;}
 .reveal .donut-wrap{display:flex;align-items:center;gap:2em;margin-top:.4em;}
 .reveal .chart-donut{width:auto;height:52vh;flex:0 0 auto;}
 .reveal .legend{list-style:none;margin:0;font-size:.7em;}
 .reveal .legend li{margin:.4em 0;padding:0;}
 .reveal .legend li::before{content:none;}
 .reveal .legend .dot{display:inline-block;width:.8em;height:.8em;border-radius:3px;background:var(--accent);margin-right:.5em;vertical-align:-.05em;}
-`,
+`;
+
+// --- style packs: palette + font only; structure lives in BASE -------------
+export const PACKS = {
+  aurora: {
+    name: "Aurora",
+    description: "Тёмный премиум-питч: крупная типографика, мягкое свечение, акцентный градиент.",
+    defaultAccent: "#7c5cff",
+    font: "Manrope",
+    fontHref: "https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap",
+    vars: (accent) => `:root{--accent:${accent};--bg:#0b0c14;--fg:#f4f5fb;--muted:#9aa0b4;--font:'Manrope';--on-accent:#0b0c14;}`,
+    extra: `
+body{background:
+  radial-gradient(60vw 60vw at 15% 0%, color-mix(in srgb,var(--accent) 32%, transparent), transparent 60%),
+  radial-gradient(50vw 50vw at 100% 100%, color-mix(in srgb,var(--accent) 22%, transparent), transparent 55%),
+  var(--bg);}`,
+  },
+  minimal: {
+    name: "Minimal",
+    description: "Светлый корпоративный: чистый белый фон, строгая типографика Inter, мягкие тени.",
+    defaultAccent: "#2563eb",
+    font: "Inter",
+    fontHref: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
+    vars: (accent) => `:root{--accent:${accent};--bg:#ffffff;--fg:#0f1222;--muted:#5b6172;--font:'Inter';--on-accent:#ffffff;}`,
+    extra: `
+.reveal h1,.reveal h2,.reveal h3{font-weight:700;letter-spacing:-.01em;}
+.reveal .card{background:#fff;border-color:color-mix(in srgb,var(--fg) 10%,transparent);box-shadow:0 6px 24px rgba(15,18,34,.06);}
+.reveal .metric-v,.reveal .bignum{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--accent);}`,
+  },
+  editorial: {
+    name: "Editorial",
+    description: "Журнальный стиль: крупные серифные заголовки Fraunces, тёплый кремовый фон.",
+    defaultAccent: "#e0483d",
+    font: "Fraunces",
+    fontHref:
+      "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap",
+    vars: (accent) => `:root{--accent:${accent};--bg:#f7f4ee;--fg:#1a1714;--muted:#6b6459;--font:'Inter';--on-accent:#ffffff;}`,
+    extra: `
+.reveal h1,.reveal h2,.reveal h3,.reveal .section-title{font-family:'Fraunces',Georgia,serif;font-weight:700;letter-spacing:-.01em;}
+.reveal h1{font-size:2.9em;} .reveal .section-title{font-size:3.8em;}
+.reveal .card{background:#fffdf9;border-color:color-mix(in srgb,var(--fg) 12%,transparent);}
+.reveal .metric-v,.reveal .bignum{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--accent);}`,
   },
 };
 
@@ -178,7 +211,9 @@ const layouts = {
 
   bullets: (s) => `
     <h2>${esc(s.title)}</h2>
-    <ul>${(s.bullets || []).map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`,
+    <ul>${(s.bullets || [])
+      .map((b) => `<li${s.animate ? ' class="fragment"' : ""}>${esc(b)}</li>`)
+      .join("")}</ul>`,
 
   "two-column": (s) => `
     <h2>${esc(s.title)}</h2>
@@ -209,7 +244,7 @@ const layouts = {
     ${s.title ? `<h2>${esc(s.title)}</h2>` : ""}
     <div class="cards">${(s.cards || [])
       .map(
-        (c) => `<div class="card">
+        (c) => `<div class="card${s.animate ? " fragment" : ""}">
         ${c.icon ? `<div class="card-ic">${icon(c.icon)}</div>` : ""}
         ${c.title ? `<div class="card-t">${esc(c.title)}</div>` : ""}
         ${c.text ? `<div class="card-x">${esc(c.text)}</div>` : ""}</div>`
@@ -294,8 +329,8 @@ export function renderDeck(deck) {
 <title>${esc(deck.title || "Presentation")}</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
-<style>${pack.css(accent)}</style>
+<link href="${pack.fontHref}" rel="stylesheet">
+<style>${pack.vars(accent)}${BASE}${pack.extra || ""}</style>
 </head>
 <body>
 <div class="reveal"><div class="slides">

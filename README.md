@@ -32,11 +32,20 @@ claude mcp add deck-mcp -- npx -y deck-mcp
 Ассистент сам вызовет `create_deck` → `render_html` и вернёт ссылку на готовый HTML.
 Готовые файлы лежат в `~/deck-mcp-output/` (переопределяется переменной `DECK_MCP_OUT`).
 
+## Темы (стиль-паки)
+| Тема | Стиль |
+|------|-------|
+| `aurora` | Тёмный премиум-питч, свечение, Manrope |
+| `minimal` | Светлый корпоративный, чистый фон, Inter |
+| `editorial` | Журнальный, серифные заголовки Fraunces, тёплый фон |
+
+Флаг слайда `animate: true` — буллеты/карточки появляются пошагово.
+
 ## Инструменты
 
 | Инструмент | Что делает |
 |------------|------------|
-| `list_templates` | Список стиль-паков (сейчас: `aurora`) |
+| `list_templates` | Список стиль-паков (`aurora`, `minimal`, `editorial`) |
 | `create_deck` | Сохраняет структуру презентации (deck-JSON), отдаёт `deckId` |
 | `render_html` | Рендерит `deckId` в самодостаточный reveal.js HTML |
 | `deploy` | Best-effort публикация на Vercel (нужен `vercel login`) |

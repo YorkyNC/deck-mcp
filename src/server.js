@@ -69,7 +69,9 @@ server.tool(
     "• image-split — title, text/bullets[], image(URL), imageSide('left'|'right')\n" +
     "• image-cover — title, subtitle, kicker, image(URL) — обложка на весь экран\n" +
     "• chart — title, chartType('bar'|'donut'|'line'), data[]{label,value} — график\n" +
-    "icon ∈ {rocket,chart,users,check,star,bolt,shield,target,clock,globe,cog,heart,lock,trend,money,layers,cloud,code,mail,spark,arrow,grid,database,eye,flag}.",
+    "icon ∈ {rocket,chart,users,check,star,bolt,shield,target,clock,globe,cog,heart,lock,trend,money,layers,cloud,code,mail,spark,arrow,grid,database,eye,flag}.\n" +
+    "template (тема): 'aurora' (тёмная премиум), 'minimal' (светлая корпоративная), 'editorial' (журнальная серифная). " +
+    "Флаг слайда animate:true — буллеты/карточки появляются пошагово.",
   { deck: deckSchema },
   async ({ deck }) => {
     await fs.mkdir(DECKS, { recursive: true });

@@ -16,7 +16,7 @@ const deck = {
   slides: [
     { layout: "title", hero: true, kicker: "Питч-дек", title: "Решения, а не дашборды", subtitle: "AI-аналитика, которая говорит на языке бизнеса" },
     { layout: "bullets", title: "Проблема", animate: true, bullets: ["Данные разбросаны по 5+ системам", "Отчёты готовятся вручную дни", "Руководитель видит цифры, а не выводы"] },
-    { layout: "section", kicker: "01", title: "Как это работает" },
+    { layout: "section", kicker: "01", title: "Как это работает", mesh: true },
     { layout: "cards", title: "Три опоры", cards: [
       { icon: "database", title: "Единый слой", text: "Все источники в одном месте" },
       { icon: "spark", title: "AI-выводы", text: "Не графики, а рекомендации" },
@@ -36,11 +36,36 @@ const deck = {
     { layout: "chart", title: "Активные пользователи", chartType: "line", data: [
       { label: "Янв", value: 200 }, { label: "Мар", value: 480 }, { label: "Июн", value: 910 }, { label: "Сен", value: 1600 },
     ] },
+    { layout: "chart", title: "Выручка нарастающим итогом, млн ₸", chartType: "area", data: [
+      { label: "Q1", value: 12 }, { label: "Q2", value: 31 }, { label: "Q3", value: 58 }, { label: "Q4", value: 99 },
+    ] },
+    { layout: "chart", title: "Ключевые показатели", chartType: "progress", data: [
+      { label: "Удержание клиентов", value: 92 }, { label: "Точность прогноза", value: 87 }, { label: "Автоматизация отчётов", value: 78 },
+    ] },
+    { layout: "statement", kicker: "Тезис", text: "Данные должны отвечать на вопросы, а не задавать новые." },
+    { layout: "timeline", title: "Дорожная карта", items: [
+      { date: "Q1", title: "Пилот", text: "Первый клиент на данных" },
+      { date: "Q2", title: "Интеграции", text: "5+ источников из коробки" },
+      { date: "Q3", title: "AI-инсайты", text: "Рекомендации, не графики" },
+      { date: "Q4", title: "Масштаб", text: "10 корпоративных клиентов" },
+    ] },
+    { layout: "process", title: "Как это работает", steps: [
+      { title: "Подключаем", text: "Все источники в единый слой" },
+      { title: "Анализируем", text: "AI находит закономерности" },
+      { title: "Рекомендуем", text: "Готовое next-best-action" },
+    ] },
+    { layout: "pricing", title: "Тарифы", plans: [
+      { name: "Старт", price: "290k ₸", period: "в месяц", features: ["1 дашборд", "3 источника", "Почта-поддержка"] },
+      { name: "Бизнес", price: "690k ₸", period: "в месяц", popular: true, features: ["Безлимит дашбордов", "10+ источников", "AI-инсайты", "Приоритет-поддержка"], cta: "Выбрать" },
+      { name: "Энтерпрайз", price: "Договорная", features: ["On-premise", "SLA 99.9%", "Выделенный менеджер"] },
+    ] },
+    { layout: "logos", title: "Нам доверяют", logos: ["KAZ Minerals", "Air Astana", "Kaspi", "Halyk", "QazaqGaz", "Beeline"] },
     { layout: "two-column", title: "Было / Стало", leftTitle: "Раньше", left: ["Excel и почта", "Неделя на отчёт", "Догадки"], rightTitle: "С SKAI", right: ["Единый экран", "Ответ за секунды", "Рекомендации ИИ"] },
-    { layout: "image-split", kicker: "Продукт", title: "Один экран для совета директоров", text: "Ключевые метрики и next-best-action на первом же слайде.", image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200", imageSide: "right" },
+    { layout: "image-split", kicker: "Продукт", title: "Один экран для совета директоров", text: "Ключевые метрики и next-best-action на первом же слайде.", image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200", imageSide: "right", kenburns: true },
     { layout: "big-number", number: "10×", caption: "быстрее принятие решений на данных" },
     { layout: "quote", quote: "Впервые совет директоров смотрит в один экран и понимает всё за минуту.", author: "CEO, пилотный клиент" },
-    { layout: "image-cover", kicker: "Спасибо", title: "Покажем на ваших данных", subtitle: "Пилот за 2 недели", image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1600" },
+    { layout: "section", kicker: "Демо", title: "Видео-фон", video: "https://cdn.example.com/sample.mp4", poster: "https://picsum.photos/seed/vid/1600/900" },
+    { layout: "image-cover", kicker: "Спасибо", title: "Покажем на ваших данных", subtitle: "Пилот за 2 недели", video: "https://cdn.example.com/cover.mp4", poster: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1600", duotone: true },
     { layout: "closing", kicker: "Контакты", title: "Запустим за 2 недели", subtitle: "rafail.uralsk@gmail.com", cta: "Запросить демо" },
   ],
 };
@@ -56,10 +81,24 @@ console.assert(html.includes("10×") && html.includes("bignum"), "big-number н�
 console.assert(html.includes('class="card"') && html.includes("<svg"), "cards/иконки не отрендерились");
 console.assert(html.includes("metric-v"), "metrics не отрендерился");
 console.assert(html.includes('class="section-title"'), "section не отрендерился");
-console.assert(html.includes('class="split"') && html.includes('class="cover"'), "image-лейауты не отрендерились");
+console.assert(html.includes('class="split"') && html.includes('class="cover'), "image-лейауты не отрендерились");
+console.assert(html.includes('class="cover-img"') && html.includes("deckKenburns"), "Ken Burns на обложке не встроен");
+console.assert(html.includes('class="cover duotone"') && html.includes('class="cover-tint"'), "duotone на обложке не применился");
+console.assert(html.includes('img-side kb') && html.includes('class="img-inner"'), "kenburns на image-split не применился");
+console.assert(html.includes('class="mesh"') && html.includes('class="mesh-bg"') && html.includes("deckMeshFloat"), "mesh-фон не встроен");
 console.assert(html.includes('class="chart"') && html.includes("url(#barg)"), "bar-график не отрендерился");
 console.assert(html.includes("chart-donut") && html.includes('class="legend"'), "donut-график не отрендерился");
 console.assert(html.includes("<polyline"), "line-график не отрендерился");
+console.assert(html.includes("<polygon") && html.includes("url(#areag)"), "area-график не отрендерился");
+console.assert(html.includes('class="rings"') && html.includes("ring-val") && html.includes("deckRing"), "progress-кольца не отрендерились");
+console.assert(html.includes('class="statement"') && html.includes("deckWipe"), "statement не отрендерился");
+console.assert(html.includes('class="timeline"') && html.includes('class="tl-dot"'), "timeline не отрендерился");
+console.assert(html.includes('class="steps"') && html.includes('class="step-n"') && html.includes("step-arrow"), "process не отрендерился");
+console.assert(html.includes('class="price popular"') && html.includes("price-badge"), "pricing не отрендерился");
+console.assert(html.includes('class="logos"') && html.includes("logo-txt"), "logos не отрендерился");
+console.assert(html.includes('class="has-video"') && html.includes('class="bg-video"'), "видео-фон слайда не отрендерился");
+console.assert(html.includes('<video class="cover-img"') && html.includes('poster='), "видео-обложка не отрендерилась");
+console.assert(html.includes('v.pause()'), "пауза видео при reduced-motion не встроена");
 console.assert(html.includes('class="fragment"'), "animate/fragment не применился");
 console.assert(html.includes('class="reveal motion"'), "motion не включён по умолчанию");
 console.assert(html.includes("@keyframes deckRise") && html.includes("deckCount"), "motion CSS/JS не встроены");

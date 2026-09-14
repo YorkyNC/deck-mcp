@@ -7,6 +7,10 @@ const esc = (s = "") =>
 // Escape a URL for safe use inside a CSS url('...') / html attribute.
 const escUrl = (s = "") => String(s).replace(/['"\\)]/g, "").replace(/\s/g, "%20");
 
+// Background <video>: autoplay muted loop (reduced-motion is paused via MOTION_JS).
+const videoTag = (src, poster, cls) =>
+  `<video class="${cls}" autoplay muted loop playsinline preload="metadata"${poster ? ` poster="${escUrl(poster)}"` : ""}><source src="${escUrl(src)}" type="video/mp4"></video>`;
+
 // --- inline SVG icon set (stroke = currentColor, no external deps) ----------
 const ICONS = {
   rocket: '<path d="M5 15c-1.5 1.5-2 5-2 5s3.5-.5 5-2M9 12a13 13 0 0 1 8-9c2 0 3 1 3 3a13 13 0 0 1-9 8l-2-2zM15 8.5a1 1 0 1 0 .01 0"/>',
@@ -79,13 +83,34 @@ body{background:var(--bg);}
 /* section divider */
 .reveal .section-title{font-size:3.2em;}
 .reveal .section-title::after{content:"";display:block;width:2.2em;height:.14em;border-radius:2px;background:var(--accent);margin-top:.35em;}
-/* image layouts */
+/* image layouts (layered: bg image + accent tint + legibility overlay + content) */
 .reveal .split{display:grid;grid-template-columns:1fr 1fr;gap:2em;align-items:center;min-height:64vh;}
-.reveal .img-side{background-size:cover;background-position:center;background-color:color-mix(in srgb,var(--accent) 30%,var(--bg));border-radius:1em;min-height:64vh;}
-.reveal .cover{display:flex;align-items:flex-end;min-height:78vh;padding:2em;border-radius:1em;background-size:cover;background-position:center;background-color:color-mix(in srgb,var(--accent) 30%,var(--bg));}
-.reveal .cover-inner{max-width:22ch;}
+.reveal .img-side{position:relative;overflow:hidden;border-radius:1em;min-height:64vh;background-color:color-mix(in srgb,var(--accent) 30%,var(--bg));}
+.reveal .img-inner{position:absolute;inset:0;background-size:cover;background-position:center;}
+.reveal .img-tint{position:absolute;inset:0;background:var(--accent);mix-blend-mode:multiply;opacity:0;}
+.reveal .img-side.duotone .img-inner{filter:grayscale(1) contrast(1.05);}
+.reveal .img-side.duotone .img-tint{opacity:.5;}
+.reveal .cover{position:relative;overflow:hidden;display:flex;align-items:flex-end;min-height:78vh;padding:2em;border-radius:1em;background-color:color-mix(in srgb,var(--accent) 30%,var(--bg));}
+.reveal .cover-img{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;}
+.reveal .cover-tint{position:absolute;inset:0;z-index:1;background:var(--accent);mix-blend-mode:multiply;opacity:0;}
+.reveal .cover::after{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(180deg,rgba(11,12,20,.15),rgba(11,12,20,.82));}
+.reveal .cover.duotone .cover-img{filter:grayscale(1) contrast(1.05);}
+.reveal .cover.duotone .cover-tint{opacity:.5;}
+.reveal .cover-inner{position:relative;z-index:3;max-width:22ch;}
 .reveal .cover-inner h1{color:#fff;}
 .reveal .cover-inner .subtitle{color:rgba(255,255,255,.82);}
+/* gradient mesh: soft colored blobs behind content — light alternative to hero, any theme */
+.reveal .mesh .mesh-bg{position:absolute;inset:0;z-index:0;overflow:hidden;background:
+  radial-gradient(40% 50% at 20% 20%, color-mix(in srgb,var(--accent) 28%,transparent), transparent 60%),
+  radial-gradient(45% 55% at 85% 30%, color-mix(in srgb,var(--accent) 20%,transparent), transparent 60%),
+  radial-gradient(55% 60% at 60% 95%, color-mix(in srgb,var(--accent) 16%,transparent), transparent 60%);}
+.reveal .mesh>*:not(.mesh-bg){position:relative;z-index:1;}
+/* video backgrounds (image-cover uses video.cover-img; other slides use .bg-video) */
+.reveal video.cover-img{object-fit:cover;width:100%;height:100%;}
+.reveal .has-video{--fg:#fff;--muted:rgba(255,255,255,.82);}
+.reveal .bg-video{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;}
+.reveal .has-video::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(8,10,18,.35),rgba(8,10,18,.78));}
+.reveal .has-video>*:not(.bg-video){position:relative;z-index:2;}
 /* hero: dark animated background on any slide, any theme */
 .reveal .hero{--fg:#ffffff;--muted:rgba(255,255,255,.78);}
 .reveal .hero .hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden;background:radial-gradient(70% 60% at 50% -10%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 60%),#080a12;}
@@ -101,6 +126,46 @@ body{background:var(--bg);}
 .reveal .legend li{margin:.4em 0;padding:0;}
 .reveal .legend li::before{content:none;}
 .reveal .legend .dot{display:inline-block;width:.8em;height:.8em;border-radius:3px;background:var(--accent);margin-right:.5em;vertical-align:-.05em;}
+/* progress rings (chartType:"progress") */
+.reveal .rings{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:1.6em;margin-top:.8em;justify-items:center;}
+.reveal .ring{text-align:center;}
+.reveal .ring-svg{width:auto;height:34vh;max-height:190px;}
+.reveal .ring-num{fill:var(--fg);font-weight:800;font-size:30px;font-family:var(--font),sans-serif;}
+.reveal .ring-lab{color:var(--muted);font-size:.62em;margin-top:.4em;max-width:14ch;}
+/* timeline / roadmap */
+.reveal .timeline{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:1.4em;margin-top:1.6em;position:relative;}
+.reveal .timeline::before{content:"";position:absolute;top:.4em;left:.4em;right:.4em;height:2px;background:color-mix(in srgb,var(--fg) 16%,transparent);}
+.reveal .tl-item{position:relative;padding-top:1.5em;}
+.reveal .tl-dot{position:absolute;top:0;left:0;width:.9em;height:.9em;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--bg);}
+.reveal .tl-date{color:var(--accent);font-weight:700;font-size:.62em;letter-spacing:.04em;margin-bottom:.2em;}
+.reveal .tl-t{font-weight:700;font-size:.82em;margin-bottom:.2em;}
+.reveal .tl-x{color:var(--muted);font-size:.62em;line-height:1.35;}
+/* process steps */
+.reveal .steps{display:flex;align-items:flex-start;gap:1em;margin-top:1.4em;}
+.reveal .step{flex:1;text-align:center;}
+.reveal .step-n{width:2em;height:2em;line-height:2em;margin:0 auto .55em;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:800;font-size:.95em;}
+.reveal .step-t{font-weight:700;font-size:.8em;margin-bottom:.2em;}
+.reveal .step-x{color:var(--muted);font-size:.6em;line-height:1.35;}
+.reveal .step-arrow{color:var(--accent);font-size:1.4em;font-weight:700;flex:0 0 auto;align-self:center;}
+/* pricing */
+.reveal .prices{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:1.2em;margin-top:1.2em;align-items:stretch;}
+.reveal .price{position:relative;display:flex;flex-direction:column;padding:1.3em 1.1em;border-radius:.9em;background:color-mix(in srgb,var(--fg) 5%,transparent);border:1px solid color-mix(in srgb,var(--fg) 12%,transparent);}
+.reveal .price.popular{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 14px 44px color-mix(in srgb,var(--accent) 22%,transparent);transform:scale(1.03);}
+.reveal .price-badge{position:absolute;top:-.8em;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--on-accent);font-weight:700;font-size:.5em;letter-spacing:.08em;text-transform:uppercase;padding:.4em 1em;border-radius:999px;white-space:nowrap;}
+.reveal .price-name{color:var(--accent);font-weight:700;font-size:.7em;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.35em;}
+.reveal .price-v{font-size:2.4em;font-weight:800;line-height:1;}
+.reveal .price-p{color:var(--muted);font-size:.6em;margin-top:.2em;}
+.reveal .price ul{margin:.8em 0 0;flex:1;}
+.reveal .price li{font-size:.66em;margin:.42em 0;}
+.reveal .price .cta{margin-top:1em;text-align:center;}
+/* logo wall */
+.reveal .logos{display:grid;grid-template-columns:repeat(auto-fit,minmax(7em,1fr));gap:1.6em;align-items:center;margin-top:1.4em;}
+.reveal .logo{display:flex;align-items:center;justify-content:center;padding:.6em;}
+.reveal .logo img{max-width:100%;max-height:3.4em;object-fit:contain;filter:grayscale(1);opacity:.72;transition:filter .3s,opacity .3s;}
+.reveal .logo:hover img{filter:none;opacity:1;}
+.reveal .logo-txt{color:var(--muted);font-weight:700;font-size:.95em;letter-spacing:.02em;}
+/* statement (kinetic thesis) */
+.reveal .statement{font-size:2.8em;font-weight:800;line-height:1.15;letter-spacing:-.02em;max-width:20ch;background:linear-gradient(120deg,var(--fg),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent;}
 `;
 
 // --- style packs: palette + font only; structure lives in BASE -------------
@@ -197,10 +262,19 @@ const MOTION_CSS = `
 .reveal.motion .present>*:nth-child(3){animation-delay:.18s}
 .reveal.motion .present>*:nth-child(4){animation-delay:.27s}
 .reveal.motion .present>*:nth-child(5){animation-delay:.36s}
-.reveal.motion .present :is(li,.card,.metric){animation:deckRise .5s cubic-bezier(.2,.7,.2,1) both;}
+.reveal.motion .present :is(li,.card,.metric,.tl-item,.step,.price,.logo){animation:deckRise .5s cubic-bezier(.2,.7,.2,1) both;}
 ${stag("li", 8, 0.15, 0.07)}
 ${stag(".card", 8, 0.15, 0.1)}
 ${stag(".metric", 6, 0.15, 0.12)}
+${stag(".tl-item", 8, 0.15, 0.1)}
+${stag(".step", 6, 0.15, 0.12)}
+${stag(".price", 5, 0.15, 0.12)}
+${stag(".logo", 12, 0.05, 0.05)}
+@keyframes deckWipe{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+.reveal.motion .present .statement{animation:deckRise .6s cubic-bezier(.2,.7,.2,1) both,deckWipe 1s cubic-bezier(.2,.7,.2,1) both;}
+@keyframes deckRing{from{stroke-dasharray:0 999}}
+.reveal.motion .present .ring-val{animation:deckRing 1s cubic-bezier(.2,.7,.2,1) both;}
+.reveal.motion .present .chart polygon{animation:deckFade .9s .25s both;}
 .reveal.motion .present .chart rect{transform-box:fill-box;transform-origin:bottom;animation:deckGrow .7s cubic-bezier(.2,.7,.2,1) both;}
 ${stag(".chart rect", 8, 0.1, 0.08)}
 .reveal.motion .present .chart text{animation:deckFade .6s .55s both;}
@@ -208,6 +282,11 @@ ${stag(".chart rect", 8, 0.1, 0.08)}
 .reveal.motion .present .chart circle{animation:deckFade .5s .85s both;}
 .reveal.motion .present .chart .seg{animation:deckSweep .9s ease both;animation-delay:calc(var(--si,0)*.14s);}
 .reveal.motion .present .legend li{animation:deckFade .5s both;}
+@keyframes deckKenburns{from{transform:scale(1) translate(0,0)}to{transform:scale(1.12) translate(-2.5%,-2%)}}
+.reveal.motion .present .cover .cover-img{animation:deckKenburns 14s ease-out both;}
+.reveal.motion .present .img-side.kb .img-inner{animation:deckKenburns 14s ease-out both;}
+@keyframes deckMeshFloat{from{transform:scale(1) translate(0,0)}to{transform:scale(1.12) translate(2%,-2%)}}
+.reveal.motion .present .mesh .mesh-bg{animation:deckMeshFloat 22s ease-in-out infinite alternate;}
 @keyframes heroFloat{from{transform:translate(-3%,-2%) scale(1)}to{transform:translate(8%,6%) scale(1.16)}}
 .reveal.motion .hero .hero-bg::before{content:"";position:absolute;inset:-25%;pointer-events:none;
   background:
@@ -233,6 +312,9 @@ if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
   var run=function(s){ if(s) s.querySelectorAll('.count').forEach(deckCount); };
   Reveal.on('ready',function(e){run(e.currentSlide);});
   Reveal.on('slidechanged',function(e){run(e.currentSlide);});
+} else {
+  // respect reduced-motion: freeze background videos on their poster frame
+  document.querySelectorAll('video').forEach(function(v){ v.removeAttribute('autoplay'); v.pause(); });
 }
 `;
 
@@ -295,6 +377,52 @@ function svgDonut(data) {
     })
     .join("");
   return `<svg class="chart chart-donut" viewBox="0 0 360 360">${segs}</svg>`;
+}
+
+// area chart: line with gradient fill under it (same data shape as line)
+function svgArea(data) {
+  const W = 640, H = 360, pad = 48, top = 34, bottom = 40;
+  const n = data.length || 1;
+  const max = Math.max(...data.map((d) => num(d.value)), 1);
+  const plotW = W - pad * 2, plotH = H - top - bottom, baseY = top + plotH;
+  const pts = data.map((d, i) => ({
+    x: pad + (n <= 1 ? plotW / 2 : (i / (n - 1)) * plotW),
+    y: top + plotH - (num(d.value) / max) * plotH,
+    d,
+  }));
+  const line = pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const area = `${pad},${baseY.toFixed(1)} ${line} ${(pad + plotW).toFixed(1)},${baseY.toFixed(1)}`;
+  const dots = pts
+    .map(
+      (p) => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="var(--accent)"/>
+      <text class="c-lab" x="${p.x.toFixed(1)}" y="${H - 12}" text-anchor="middle">${esc(p.d.label || "")}</text>`
+    )
+    .join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">
+    <defs><linearGradient id="areag" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--accent)" stop-opacity=".45"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+    <polygon fill="url(#areag)" points="${area}"/>
+    <polyline pathLength="1" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${line}"/>
+    ${dots}</svg>`;
+}
+
+// progress rings: row of circular gauges — value is a percent 0..100
+function svgProgress(data) {
+  const rings = data
+    .map((d) => {
+      const pct = Math.max(0, Math.min(100, num(d.value)));
+      const r = 52, C = 2 * Math.PI * r, len = (pct / 100) * C;
+      return `<div class="ring">
+        <svg viewBox="0 0 140 140" class="ring-svg">
+          <circle cx="70" cy="70" r="${r}" fill="none" stroke="color-mix(in srgb,var(--fg) 12%,transparent)" stroke-width="14"/>
+          <circle class="ring-val" cx="70" cy="70" r="${r}" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round"
+            stroke-dasharray="${len.toFixed(1)} ${(C - len).toFixed(1)}" transform="rotate(-90 70 70)"/>
+          <text x="70" y="79" text-anchor="middle" class="ring-num count">${pct}%</text>
+        </svg>
+        <div class="ring-lab">${esc(d.label || "")}</div></div>`;
+    })
+    .join("");
+  return `<div class="rings">${rings}</div>`;
 }
 
 // --- layout renderers -------------------------------------------------------
@@ -364,7 +492,10 @@ const layouts = {
 
   // text + image split (imageSide: "left" | "right", default right)
   "image-split": (s) => {
-    const img = `<div class="img-side" style="background-image:url('${escUrl(s.image)}')"></div>`;
+    const cls = `img-side${s.kenburns ? " kb" : ""}${s.duotone ? " duotone" : ""}`;
+    const img = `<div class="${cls}">
+      <div class="img-inner" style="background-image:url('${escUrl(s.image)}')"></div>
+      <div class="img-tint" aria-hidden="true"></div></div>`;
     const txt = `<div class="txt-side">
       ${s.kicker ? `<div class="kicker">${esc(s.kicker)}</div>` : ""}
       <h2>${esc(s.title)}</h2>
@@ -378,7 +509,12 @@ const layouts = {
   chart: (s) => {
     const type = s.chartType || "bar";
     const data = s.data || [];
-    const svg = type === "donut" ? svgDonut(data) : type === "line" ? svgLine(data) : svgBar(data);
+    const svg =
+      type === "donut" ? svgDonut(data)
+      : type === "line" ? svgLine(data)
+      : type === "area" ? svgArea(data)
+      : type === "progress" ? svgProgress(data)
+      : svgBar(data);
     const legend =
       type === "donut"
         ? `<ul class="legend">${data
@@ -394,10 +530,71 @@ const layouts = {
       ${type === "donut" ? `<div class="donut-wrap">${svg}${legend}</div>` : svg}`;
   },
 
-  // full-bleed image cover with legibility overlay
+  // horizontal roadmap: items[] = {date?, title, text?}
+  timeline: (s) => `
+    ${s.title ? `<h2>${esc(s.title)}</h2>` : ""}
+    <div class="timeline">${(s.items || [])
+      .map(
+        (it) => `<div class="tl-item"><div class="tl-dot"></div>
+        ${it.date ? `<div class="tl-date">${esc(it.date)}</div>` : ""}
+        <div class="tl-t">${esc(it.title || "")}</div>
+        ${it.text ? `<div class="tl-x">${esc(it.text)}</div>` : ""}</div>`
+      )
+      .join("")}</div>`,
+
+  // numbered steps with arrows: steps[] = {title, text?}
+  process: (s) => `
+    ${s.title ? `<h2>${esc(s.title)}</h2>` : ""}
+    <div class="steps">${(s.steps || [])
+      .map(
+        (st, i) => `<div class="step"><div class="step-n">${i + 1}</div>
+        <div class="step-t">${esc(st.title || "")}</div>
+        ${st.text ? `<div class="step-x">${esc(st.text)}</div>` : ""}</div>`
+      )
+      .join('<div class="step-arrow" aria-hidden="true">→</div>')}</div>`,
+
+  // pricing tiers: plans[] = {name, price, period?, features[], popular?, cta?}
+  pricing: (s) => `
+    ${s.title ? `<h2>${esc(s.title)}</h2>` : ""}
+    <div class="prices">${(s.plans || [])
+      .map(
+        (p) => `<div class="price${p.popular ? " popular" : ""}">
+        ${p.popular ? `<div class="price-badge">${esc(p.badge || "Популярный")}</div>` : ""}
+        <div class="price-name">${esc(p.name || "")}</div>
+        <div class="price-v">${esc(p.price || "")}</div>
+        ${p.period ? `<div class="price-p">${esc(p.period)}</div>` : ""}
+        <ul>${(p.features || []).map((f) => `<li>${esc(f)}</li>`).join("")}</ul>
+        ${p.cta ? `<span class="cta">${esc(p.cta)}</span>` : ""}</div>`
+      )
+      .join("")}</div>`,
+
+  // logo wall: logos[] = URL string | {src, alt}
+  logos: (s) => `
+    ${s.title ? `<h2>${esc(s.title)}</h2>` : ""}
+    <div class="logos">${(s.logos || [])
+      .map((l) =>
+        typeof l === "string" && !/^https?:/i.test(l)
+          ? `<div class="logo logo-txt">${esc(l)}</div>`
+          : `<div class="logo"><img src="${escUrl(typeof l === "string" ? l : l.src)}" alt="${esc(
+              typeof l === "string" ? "" : l.alt || ""
+            )}"></div>`
+      )
+      .join("")}</div>`,
+
+  // kinetic full-screen thesis: text (or title), source?
+  statement: (s) => `
+    ${s.kicker ? `<div class="kicker">${esc(s.kicker)}</div>` : ""}
+    <div class="statement">${esc(s.text || s.title || "")}</div>
+    ${s.source ? `<div class="q-author">${esc(s.source)}</div>` : ""}`,
+
+  // full-bleed image cover: layered bg image (auto Ken Burns) + accent tint + overlay
   "image-cover": (s) => {
-    const overlay = "linear-gradient(180deg,rgba(11,12,20,.15),rgba(11,12,20,.82))";
-    return `<div class="cover" style="background-image:${overlay},url('${escUrl(s.image)}')">
+    const bg = s.video
+      ? videoTag(s.video, s.poster || s.image, "cover-img")
+      : `<div class="cover-img" style="background-image:url('${escUrl(s.image)}')"></div>`;
+    return `<div class="cover${s.duotone ? " duotone" : ""}">
+      ${bg}
+      <div class="cover-tint" aria-hidden="true"></div>
       <div class="cover-inner">
         ${s.kicker ? `<div class="kicker">${esc(s.kicker)}</div>` : ""}
         <h1>${esc(s.title)}</h1>
@@ -409,9 +606,18 @@ const layouts = {
 export function renderSlide(slide) {
   const fn = layouts[slide.layout];
   if (!fn) throw new Error(`Unknown layout: ${slide.layout}`);
-  // hero:true → dark animated background on this slide (any theme); morph:true → reveal auto-animate
-  const bg = slide.hero ? '<div class="hero-bg" aria-hidden="true"></div>' : "";
-  return `<section${slide.hero ? ' class="hero"' : ""}${slide.morph ? " data-auto-animate" : ""}>${bg}${fn(slide)}</section>`;
+  // hero:true → dark animated bg; mesh:true → soft gradient-mesh bg; morph:true → reveal auto-animate
+  const cls = [];
+  const layers = [];
+  if (slide.hero) { cls.push("hero"); layers.push('<div class="hero-bg" aria-hidden="true"></div>'); }
+  if (slide.mesh) { cls.push("mesh"); layers.push('<div class="mesh-bg" aria-hidden="true"></div>'); }
+  // full-bleed background video on any layout except image-cover (which handles video itself)
+  if (slide.video && slide.layout !== "image-cover") {
+    cls.push("has-video");
+    layers.push(videoTag(slide.video, slide.poster, "bg-video"));
+  }
+  const classAttr = cls.length ? ` class="${cls.join(" ")}"` : "";
+  return `<section${classAttr}${slide.morph ? " data-auto-animate" : ""}>${layers.join("")}${fn(slide)}</section>`;
 }
 
 export function renderDeck(deck) {

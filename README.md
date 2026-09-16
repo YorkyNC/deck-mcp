@@ -3,12 +3,19 @@
 MCP-сервер, который превращает описание в красивую презентацию (reveal.js HTML).
 Контент придумывает твой ИИ-ассистент (Claude), сервер — красиво рендерит и публикует.
 
-**Что умеет:** 17 лейаутов (карточки с иконками, ряды KPI, графики bar/donut/line/area/progress,
-роадмап, шаги, тарифы, стена логотипов, кинетические тезисы, фоновые изображения с кино-зумом и duotone,
-разделители), 4 темы (aurora / noir / minimal / editorial).
+**Что умеет:** 20 лейаутов (карточки с иконками, ряды KPI, графики bar/donut/line/area/progress,
+роадмап, шаги, тарифы, стена логотипов, кинетические тезисы, bento-сетка, сравнение «было/стало»,
+стена KPI, фоновые изображения с кино-зумом и duotone, разделители), 4 темы (aurora / noir / minimal / editorial).
 **Анимация включена по умолчанию:** контент появляется каскадом, цифры отсчитываются
-от 0, графики рисуются, фон дышит. Всё self-contained: только reveal.js и Google Fonts
-по CDN, никаких сборок и зависимостей в выходном HTML.
+от 0, графики рисуются, фон дышит. Выходной HTML **полностью self-contained**: reveal.js
+инлайнится внутрь, всё медиа скачивается локально — файл работает офлайн, без CDN
+(только Google Fonts подгружаются, с деградацией на системный шрифт).
+
+**Больше, чем рендерер — презентационный агент:**
+- `extract_brand(url)` — тянет палитру/лого/тему с сайта клиента → дек в его фирменном стиле.
+- `outline_deck(topic, framework)` — строит скелет по проверенным фреймворкам (pitch, yc, problem-solution, product-launch, sales, report).
+- `review_deck(deckId)` — рендерит дек в headless-браузере и находит переполнение / пустые слайды / простыни текста / битые картинки (петля «сгенерил → посмотрел → исправил»).
+- `export_pdf(deckId)` — PDF на отправку/печать.
 
 ## Установка (для пользователей)
 
@@ -104,14 +111,21 @@ export PIXABAY_API_KEY=xxxxxxxx
 
 | Инструмент | Что делает |
 |------------|------------|
-| `list_templates` | Список стиль-паков (`aurora`, `minimal`, `editorial`) |
+| `list_templates` | Список стиль-паков (`aurora`, `noir`, `minimal`, `editorial`) |
+| `extract_brand` | Извлекает палитру/лого/тему с сайта клиента → дек в его фирменном стиле |
+| `outline_deck` | Строит скелет дека по фреймворку истории (pitch/yc/problem-solution/product-launch/sales/report) |
 | `find_media` | Поиск реальных фото/видео по ключевику (Pixabay, нужен `PIXABAY_API_KEY`) |
 | `create_deck` | Сохраняет структуру презентации (deck-JSON), отдаёт `deckId` |
-| `render_html` | Рендерит `deckId` в самодостаточный reveal.js HTML (медиа скачивается локально) |
+| `render_html` | Рендерит `deckId` в самодостаточный reveal.js HTML (reveal инлайн, медиа локально) |
+| `review_deck` | Визуальная проверка в headless-браузере: переполнение, пустые слайды, простыни, битые фото (нужен Chrome) |
+| `export_pdf` | Экспорт деки в PDF (нужен Chrome) |
 | `deploy` | Best-effort публикация на Vercel (нужен `vercel login`) |
 
+Полный флоу под клиента: `extract_brand` → `outline_deck` → `create_deck` → `render_html` → `review_deck` → правки → `export_pdf` / `deploy`.
+Headless-инструменты используют системный Chrome (задать путь: `DECK_MCP_CHROME`; отключить: `DECK_MCP_NO_BROWSER=1`).
+
 ## Лейауты слайдов
-`title` · `section` · `bullets` · `two-column` · `cards` (сетка фич с иконками) · `metrics` (ряд KPI) · `chart` (bar/donut/line/area/progress) · `big-number` · `image-split` · `image-cover` · `quote` · `closing` · `timeline` (роадмап) · `process` (шаги со стрелками) · `pricing` (тарифы, `popular:true` подсвечивает) · `logos` (стена логотипов) · `statement` (кинетический тезис на весь экран)
+`title` · `section` · `bullets` · `two-column` · `cards` (сетка фич с иконками) · `metrics` (ряд KPI) · `chart` (bar/donut/line/area/progress) · `big-number` · `image-split` · `image-cover` · `quote` · `closing` · `timeline` (роадмап) · `process` (шаги со стрелками) · `pricing` (тарифы, `popular:true` подсвечивает) · `logos` (стена логотипов) · `statement` (кинетический тезис на весь экран) · `bento` (асимметричная сетка плиток, `span:'lg'|'wide'`) · `comparison` (сравнение «было/стало», колонка `b` подсвечена) · `stat-wall` (плотная стена KPI)
 
 Иконки для `cards`: `rocket, chart, users, check, star, bolt, shield, target, clock, globe, cog, heart, lock, trend, money, layers, cloud, code, mail, spark, arrow, grid, database, eye, flag`.
 

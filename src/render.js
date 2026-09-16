@@ -1,6 +1,26 @@
 // Deck JSON -> self-contained reveal.js HTML.
 // One style pack for now: "aurora" (premium dark pitch). Add packs to PACKS below.
 
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+
+// Bundle reveal.js into the HTML so a deck is fully self-contained: works offline and
+// survives CDN outages — essential when the file is handed to a client. Falls back to
+// the CDN only if the reveal.js package isn't installed.
+const REVEAL = (() => {
+  try {
+    const require = createRequire(import.meta.url);
+    const css = readFileSync(require.resolve("reveal.js/dist/reveal.css"), "utf8");
+    const js = readFileSync(require.resolve("reveal.js/dist/reveal.js"), "utf8");
+    return { head: `<style>${css}</style>`, script: `<script>${js}</script>` };
+  } catch {
+    return {
+      head: `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">`,
+      script: `<script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"></script>`,
+    };
+  }
+})();
+
 const esc = (s = "") =>
   String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
@@ -318,6 +338,29 @@ if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
 }
 `;
 
+// --- extra kinetic layouts (bento / comparison / stat-wall) -----------------
+const EXTRA_CSS = `
+.reveal .bento{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:minmax(118px,auto);gap:1em;margin-top:.5em;}
+.reveal .bento-tile{background:color-mix(in srgb,var(--fg) 5%,transparent);border:1px solid color-mix(in srgb,var(--fg) 10%,transparent);border-radius:1em;padding:1em 1.1em;display:flex;flex-direction:column;justify-content:flex-end;}
+.reveal .bento-tile.lg{grid-column:span 2;grid-row:span 2;}
+.reveal .bento-tile.wide{grid-column:span 2;}
+.reveal .bento-ic{color:var(--accent);font-size:1.5em;line-height:1;margin-bottom:.35em;}
+.reveal .bento-t{font-weight:700;font-size:.82em;line-height:1.15;}
+.reveal .bento-x{color:var(--muted);font-size:.62em;line-height:1.35;margin-top:.3em;}
+.reveal .cmp{display:grid;grid-template-columns:1.2fr 1fr 1fr;margin-top:.6em;border-radius:1em;overflow:hidden;border:1px solid color-mix(in srgb,var(--fg) 12%,transparent);}
+.reveal .cmp>div{padding:.55em .8em;font-size:.66em;line-height:1.3;border-bottom:1px solid color-mix(in srgb,var(--fg) 8%,transparent);}
+.reveal .cmp .cmp-h{font-weight:700;background:color-mix(in srgb,var(--fg) 6%,transparent);}
+.reveal .cmp .cmp-b{color:var(--accent);font-weight:600;background:color-mix(in srgb,var(--accent) 9%,transparent);}
+.reveal .cmp .cmp-rowlab{color:var(--muted);}
+.reveal .statwall{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1.4em 1em;margin-top:.7em;}
+.reveal .sw-v{font-size:1.9em;font-weight:800;line-height:1;color:var(--accent);}
+.reveal .sw-l{color:var(--muted);font-size:.58em;margin-top:.3em;line-height:1.3;max-width:16ch;}
+@media (prefers-reduced-motion: no-preference){
+.reveal.motion .present :is(.bento-tile,.sw,.cmp>div){animation:deckRise .5s cubic-bezier(.2,.7,.2,1) both;}
+${stag(".bento-tile", 8, 0.12, 0.07)}
+${stag(".sw", 12, 0.1, 0.05)}
+}`;
+
 // --- inline SVG charts (fill/stroke via var(--accent), no external deps) ----
 const num = (v) => (Number(String(v).replace(/[^\d.-]/g, "")) || 0);
 
@@ -587,6 +630,42 @@ const layouts = {
     <div class="statement">${esc(s.text || s.title || "")}</div>
     ${s.source ? `<div class="q-author">${esc(s.source)}</div>` : ""}`,
 
+  // asymmetric bento grid: items[] = {title, text?, icon?, span?('lg'|'wide')}
+  bento: (s) => `
+    ${s.title ? `<h2>${esc(s.title)}</h2>` : ""}
+    <div class="bento">${(s.items || [])
+      .map(
+        (it) => `<div class="bento-tile${it.span ? ` ${esc(it.span)}` : ""}">
+        ${it.icon ? `<div class="bento-ic">${icon(it.icon)}</div>` : ""}
+        ${it.title ? `<div class="bento-t">${esc(it.title)}</div>` : ""}
+        ${it.text ? `<div class="bento-x">${esc(it.text)}</div>` : ""}</div>`
+      )
+      .join("")}</div>`,
+
+  // side-by-side comparison: columns {a, b}, rows[] = {label, a, b} (b column highlighted)
+  comparison: (s) => {
+    const cols = s.columns || {};
+    return `${s.title ? `<h2>${esc(s.title)}</h2>` : ""}
+      <div class="cmp">
+        <div class="cmp-h"></div><div class="cmp-h">${esc(cols.a || "")}</div><div class="cmp-h cmp-b">${esc(cols.b || "")}</div>
+        ${(s.rows || [])
+          .map(
+            (r) => `<div class="cmp-rowlab">${esc(r.label || "")}</div><div>${esc(r.a || "")}</div><div class="cmp-b">${esc(r.b || "")}</div>`
+          )
+          .join("")}
+      </div>`;
+  },
+
+  // dense wall of many KPIs: items[] = {value, label}
+  "stat-wall": (s) => `
+    ${s.title ? `<h2>${esc(s.title)}</h2>` : ""}
+    <div class="statwall">${(s.items || [])
+      .map(
+        (m) => `<div class="sw"><div class="sw-v count">${esc(m.value)}</div>
+        <div class="sw-l">${esc(m.label || "")}</div></div>`
+      )
+      .join("")}</div>`,
+
   // full-bleed image cover: layered bg image (auto Ken Burns) + accent tint + overlay
   "image-cover": (s) => {
     const bg = s.video
@@ -617,7 +696,7 @@ export function renderSlide(slide) {
     layers.push(videoTag(slide.video, slide.poster, "bg-video"));
   }
   const classAttr = cls.length ? ` class="${cls.join(" ")}"` : "";
-  return `<section${classAttr}${slide.morph ? " data-auto-animate" : ""}>${layers.join("")}${fn(slide)}</section>`;
+  return `<section data-layout="${esc(slide.layout)}"${classAttr}${slide.morph ? " data-auto-animate" : ""}>${layers.join("")}${fn(slide)}</section>`;
 }
 
 export function renderDeck(deck) {
@@ -632,19 +711,19 @@ export function renderDeck(deck) {
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(deck.title || "Presentation")}</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
+${REVEAL.head}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="${pack.fontHref}" rel="stylesheet">
-<style>${pack.vars(accent)}${BASE}${pack.extra || ""}${MOTION_CSS}</style>
+<style>${pack.vars(accent)}${BASE}${pack.extra || ""}${MOTION_CSS}${EXTRA_CSS}</style>
 </head>
 <body>
 <div class="reveal${motion}"><div class="slides">
 ${slides}
 </div></div>
 ${footer}
-<script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"></script>
+${REVEAL.script}
 <script>
-Reveal.initialize({hash:true,transition:'${esc(transition)}',backgroundTransition:'fade',autoAnimateDuration:.8,controlsTutorial:false});
+Reveal.initialize({width:1280,height:720,margin:0.04,minScale:0.2,maxScale:2.0,hash:true,transition:'${esc(transition)}',backgroundTransition:'fade',autoAnimateDuration:.8,controlsTutorial:false});
 ${MOTION_JS}
 </script>
 </body>

@@ -4,6 +4,10 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { renderDeck, PACKS } from "./src/render.js";
+import { FRAMEWORKS, buildOutline } from "./src/narrative.js";
+import { parseBrand } from "./src/brand.js";
+import { reviewDeck } from "./src/review.js";
+import { findChrome } from "./src/headless.js";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 
@@ -107,6 +111,9 @@ console.assert(html.includes('class="hero"') && html.includes('class="hero-bg"')
 console.assert(html.includes('class="metric-v count"') && html.includes('class="bignum count"'), "счётчики цифр не размечены");
 console.assert(renderDeck({ ...deck, motion: false }).includes('class="reveal"'), "motion:false не отключает движение");
 console.assert(!html.includes("Unknown layout"), "неизвестный лейаут");
+// Phase 0: self-contained output (no CDN) + explicit stage size for large-screen scaling
+console.assert(!html.includes("cdn.jsdelivr"), "reveal.js не инлайнен — остался CDN");
+console.assert(html.includes("width:1280,height:720") && html.includes("maxScale:2.0"), "размеры сцены не заданы — ломается на больших экранах");
 
 // each theme must render with its own font + palette vars
 for (const [id, p] of Object.entries(PACKS)) {
@@ -118,10 +125,54 @@ for (const [id, p] of Object.entries(PACKS)) {
   await fs.writeFile(path.join(themeDir, "index.html"), h);
 }
 
+// Phase 1: narrative frameworks reference only known layouts, and outlines are valid decks
+const KNOWN = new Set(["title","bullets","two-column","big-number","quote","closing","cards","metrics","section","image-split","image-cover","chart","timeline","process","pricing","logos","statement"]);
+for (const [id, fw] of Object.entries(FRAMEWORKS)) {
+  console.assert(fw.slides.length >= 3, `framework ${id}: слишком короткий`);
+  for (const s of fw.slides) console.assert(KNOWN.has(s.layout), `framework ${id}: неизвестный layout '${s.layout}'`);
+}
+const outline = buildOutline("Тест", "pitch");
+console.assert(outline.slides.every((s) => s.note && s.role && s.layout), "outline: слайд без note/role/layout");
+console.assert(renderDeck(outline).includes('class="reveal'), "outline не рендерится");
+
+// Phase 2: brand parsing pulls accent/logo/font/template from markup
+const sampleHtml = `<meta name="theme-color" content="#ff5a1f">
+<meta property="og:image" content="/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700">
+<body style="background:#0a0a0a">`;
+const brand = parseBrand(sampleHtml, "https://acme.io");
+console.assert(brand.accent === "#ff5a1f", `brand accent: ${brand.accent}`);
+console.assert(brand.logo === "https://acme.io/logo.png", `brand logo: ${brand.logo}`);
+console.assert(brand.font === "Space Grotesk", `brand font: ${brand.font}`);
+console.assert(brand.template === "aurora", `brand template (dark bg -> aurora): ${brand.template}`);
+
+// Phase 5: new kinetic layouts render
+const x = renderDeck({
+  title: "layouts", template: "aurora",
+  slides: [
+    { layout: "bento", title: "B", items: [{ title: "t", text: "x", icon: "rocket", span: "lg" }, { title: "u" }] },
+    { layout: "comparison", title: "C", columns: { a: "Сейчас", b: "С нами" }, rows: [{ label: "Скорость", a: "медленно", b: "быстро" }] },
+    { layout: "stat-wall", title: "S", items: [{ value: "10×", label: "рост" }, { value: "2.4M", label: "юзеров" }] },
+  ],
+});
+console.assert(x.includes('class="bento"') && x.includes("bento-tile lg"), "bento не отрендерился");
+console.assert(x.includes('class="cmp"') && x.includes("cmp-b"), "comparison не отрендерился");
+console.assert(x.includes('class="statwall"') && x.includes('data-layout="stat-wall"'), "stat-wall не отрендерился");
+console.assert(!x.includes("Unknown layout"), "новый лейаут неизвестен");
+
 const dir = path.join(ROOT, "decks", "demo");
 await fs.mkdir(dir, { recursive: true });
 const file = path.join(dir, "index.html");
 await fs.writeFile(file, html);
+
+// Phase 3: visual review (skipped if no Chrome, so npm test stays green everywhere)
+if (findChrome() && !process.env.DECK_MCP_NO_BROWSER) {
+  const r = await reviewDeck(pathToFileURL(file).href);
+  console.assert(r.total > 0 && Array.isArray(r.issues), "review_deck не вернул результат");
+  console.log(`Review: ${r.total} слайдов, проблем ${r.issues.length}`);
+} else {
+  console.log("Review: пропущено (нет Chrome / DECK_MCP_NO_BROWSER)");
+}
 
 console.log("OK — все проверки прошли");
 console.log("Aurora:   ", pathToFileURL(file).href);

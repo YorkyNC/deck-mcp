@@ -4,9 +4,16 @@
   "private": true,
   "type": "module",
   "description": "MCP-сервер: deck-JSON → красивая reveal.js презентация (стиль-пак aurora) + деплой",
-  "bin": { "deck-mcp": "src/server.js" },
-  "files": ["src", "README.md"],
-  "engines": { "node": ">=18" },
+  "bin": {
+    "deck-mcp": "src/server.js"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node src/server.js",
     "demo": "node demo.js",
@@ -14,6 +21,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
+    "puppeteer-core": "^23.11.1",
+    "reveal.js": "^5.2.1",
     "zod": "^3.23.0"
   }
 }

@@ -13,6 +13,10 @@ import os from "node:os";
 import { pathToFileURL } from "node:url";
 import { renderDeck, PACKS } from "./render.js";
 import { localizeAssets } from "./media.js";
+import { FRAMEWORKS, buildOutline } from "./narrative.js";
+import { extractBrand } from "./brand.js";
+import { reviewDeck } from "./review.js";
+import { exportPdf } from "./export.js";
 
 const execFileP = promisify(execFile);
 // Output goes to a predictable, user-writable dir — NOT the package dir, which is
@@ -28,6 +32,7 @@ const slideSchema = z
       "title", "bullets", "two-column", "big-number", "quote", "closing",
       "cards", "metrics", "section", "image-split", "image-cover", "chart",
       "timeline", "process", "pricing", "logos", "statement",
+      "bento", "comparison", "stat-wall",
     ]),
   })
   .passthrough();
@@ -60,6 +65,54 @@ server.tool(
 );
 
 server.tool(
+  "extract_brand",
+  "Извлечь бренд клиента с его сайта (URL) — палитру, шрифт, лого — чтобы дек был в фирменном стиле. " +
+    "Возвращает accent (HEX), рекомендованную тему (template), URL лого и шрифт. " +
+    "Примени: передай accent и template в create_deck (deck.accent/deck.template), вставь logo в обложку/закрытие (image). " +
+    "Best-effort: если что-то не распозналось — вернётся null, используй дефолты. Шрифт пока справочно (accent+лого дают основной бренд-эффект).",
+  { url: z.string().describe("Сайт клиента, напр. 'stripe.com' или 'https://acme.io'") },
+  async ({ url }) => {
+    try {
+      const b = await extractBrand(url);
+      return text(
+        `Бренд с ${b.url}:\n` +
+          `• accent: ${b.accent || "не найден — задай вручную"}\n` +
+          `• template (реко): ${b.template}\n` +
+          `• logo: ${b.logo || "не найдено"}\n` +
+          `• шрифт: ${b.font || "не найден"}${b.fontHref ? ` (${b.fontHref})` : ""}\n\n` +
+          `Применить: create_deck с accent:"${b.accent || "#6366f1"}", template:"${b.template}"` +
+          (b.logo ? `; вставь logo в image-cover/closing (image:"${b.logo}").` : ".")
+      );
+    } catch (e) {
+      return text(`Не удалось извлечь бренд с "${url}": ${e.message}. Задай accent/template вручную в create_deck.`);
+    }
+  }
+);
+
+server.tool(
+  "outline_deck",
+  "Построить СКЕЛЕТ дека по проверенному фреймворку истории — вызывай ПЕРВЫМ, до create_deck. " +
+    "Возвращает упорядоченные слайды (layout + role + note-подсказка что писать). " +
+    "Заполни note реальным контентом (цифры, факты) и передай готовый deck в create_deck. " +
+    "Фреймворки: pitch (инвест-питч), yc (тезисный YC-стиль), problem-solution, product-launch, sales (продажная встреча), report (отчёт).",
+  {
+    topic: z.string().describe("Тема/название презентации"),
+    framework: z.enum(["pitch", "yc", "problem-solution", "product-launch", "sales", "report"]),
+    language: z.string().default("ru"),
+    template: z.string().default("aurora"),
+  },
+  async ({ topic, framework, language = "ru", template = "aurora" }) => {
+    const fw = FRAMEWORKS[framework];
+    const skeleton = buildOutline(topic, framework, language, template);
+    return text(
+      `Фреймворк: ${fw.name} — ${fw.description}\n` +
+        `Слайдов: ${skeleton.slides.length}. Заполни каждый по 'note', убери role/note, добавь поля лейаута, потом create_deck.\n\n` +
+        JSON.stringify(skeleton, null, 2)
+    );
+  }
+);
+
+server.tool(
   "create_deck",
   "Сохранить deck-JSON (структуру + контент презентации, заполненную моделью). Возвращает deckId. " +
     "Слайды: layout + поля лейаута. Не делай дек только из bullets — чередуй визуальные лейауты. Лейауты:\n" +
@@ -78,6 +131,9 @@ server.tool(
     "• pricing — title, plans[]{name,price,period,features[],popular,cta} — тарифы карточками (popular:true подсвечивает)\n" +
     "• logos — title, logos[] (URL картинки или строка-название) — стена логотипов/партнёров\n" +
     "• statement — text (или title), source — крупный кинетический тезис на весь экран\n" +
+    "• bento — title, items[]{title,text,icon,span} — асимметричная bento-сетка плиток (span:'lg' 2×2, 'wide' 2×1); премиум-обзор фич\n" +
+    "• comparison — title, columns{a,b}, rows[]{label,a,b} — сравнение «как сейчас vs с нами» (колонка b подсвечена)\n" +
+    "• stat-wall — title, items[]{value,label} — плотная стена из 6-12 KPI\n" +
     "icon ∈ {rocket,chart,users,check,star,bolt,shield,target,clock,globe,cog,heart,lock,trend,money,layers,cloud,code,mail,spark,arrow,grid,database,eye,flag}.\n" +
     "template (тема): 'aurora' (тёмная премиум), 'noir' (глубокий чёрный, драма), 'minimal' (светлая корпоративная), 'editorial' (журнальная серифная).\n" +
     "Флаг слайда hero:true — оживлённый тёмный фон с затемнением на этом слайде (в любой теме); идеально для title/section/cover.\n" +
@@ -173,6 +229,55 @@ server.tool(
     const file = path.join(dir, "index.html");
     await fs.writeFile(file, html);
     return text(`HTML: ${file}\nОткрыть: ${pathToFileURL(file).href}\nОпубликовать: deploy("${deckId}")`);
+  }
+);
+
+server.tool(
+  "review_deck",
+  "Визуально проверить отрендеренную деку в headless-браузере — ловит переполнение слайдов, " +
+    "пустые слайды, простыни текста, битые картинки. Возвращает список правок. " +
+    "Флоу: render_html → review_deck → исправь дек → render_html снова. Нужен Chrome (DECK_MCP_NO_BROWSER=1 отключает).",
+  { deckId: z.string() },
+  async ({ deckId }) => {
+    const file = path.join(DECKS, deckId, "index.html");
+    try {
+      await fs.access(file);
+    } catch {
+      return text(`Сначала render_html("${deckId}") — index.html ещё не создан.`);
+    }
+    try {
+      const { total, issues } = await reviewDeck(pathToFileURL(file).href);
+      if (!issues.length) return text(`✓ Ревью пройдено: ${total} слайдов, проблем не найдено.`);
+      return text(
+        `Ревью (${total} слайдов) — найдено ${issues.length}:\n` +
+          issues.map((i) => `• ${i.msg}`).join("\n") +
+          `\n\nИсправь дек (create_deck заново) → render_html → review_deck.`
+      );
+    } catch (e) {
+      return text(`Ревью недоступно: ${e.message}`);
+    }
+  }
+);
+
+server.tool(
+  "export_pdf",
+  "Экспортировать отрендеренную деку в PDF (для отправки/печати). Возвращает путь. Нужен Chrome.",
+  { deckId: z.string() },
+  async ({ deckId }) => {
+    const dir = path.join(DECKS, deckId);
+    const file = path.join(dir, "index.html");
+    try {
+      await fs.access(file);
+    } catch {
+      return text(`Сначала render_html("${deckId}") — index.html ещё не создан.`);
+    }
+    try {
+      const out = path.join(dir, `${deckId}.pdf`);
+      await exportPdf(pathToFileURL(file).href, out);
+      return text(`PDF: ${out}`);
+    } catch (e) {
+      return text(`Экспорт не удался: ${e.message}`);
+    }
   }
 );
 
